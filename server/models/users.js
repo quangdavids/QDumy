@@ -37,3 +37,5 @@ const userSchema = mongoose.Schema({
   review: [{ type: Schema.Types.ObjectId, ref: "Review" }],
   enrolledCourses: [{ type: Schema.Types.ObjectId, ref: "Course" }],
 });
+
+module.exports = mongoose.model("Users", userSchema)
