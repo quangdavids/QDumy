@@ -44,3 +44,36 @@ const addReviewToCourse = async (req, res) => {
 };
 
 
+
+const editReview = async (req, res) => {
+  try {
+    const { reviewId } = req.params;
+
+    const updatedReview = await Review.findByIdAndUpdate(reviewId, req.body);
+    res
+      .status(200)
+      .json({ message: "Review updated successfully", updatedReview });
+  } catch (err) {
+    res
+      .status(400)
+      .json({ message: "Error in updating review", error: err.message });
+  }
+};
+
+const deleteReview = async (req, res) => {
+  try {
+    const { reviewId } = req.params;
+    const review = await Review.findByIdAndDelete(reviewId);
+    res.status(200).json({ message: "Review deleted successfully" });
+  } catch (err) {
+    res
+      .status(400)
+      .json({ message: "Error in deleting review", error: err.message });
+  }
+};
+
+module.exports = {
+  addReviewToCourse,
+  editReview,
+  deleteReview
+}

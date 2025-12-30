@@ -14,9 +14,31 @@
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.1.0",
+    "@fortawesome/fontawesome-svg-core": "^7.1.0",
+    "@fortawesome/vue-fontawesome": "^3.1.2",
+    "@headlessui/vue": "^1.7.23",
+    "@stripe/stripe-js": "^8.6.0",
+    "@tailwindcss/vite": "^4.1.18",
+    "@tailwindplus/elements": "^1.0.21",
+    "@vueup/vue-quill": "^1.2.0",
+    "axios": "^1.13.2",
+    "dayjs": "^1.11.19",
     "pinia": "^3.0.4",
+    "pinia-plugin-persistedstate": "^4.7.1",
+    "plyr": "^3.8.3",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.5.4",
+    "quill": "^2.0.3",
+    "stripe": "^20.1.0",
+    "swiper": "^12.0.3",
+    "tailwindcss": "^4.1.18",
+    "video.js": "^8.23.4",
+    "videojs": "^1.0.0",
     "vue": "^3.5.25",
-    "vue-router": "^4.6.3"
+    "vue-chartjs": "^5.3.3",
+    "vue-router": "^4.6.4",
+    "vue3-star-ratings": "^3.0.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
