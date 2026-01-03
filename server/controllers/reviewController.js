@@ -73,6 +73,7 @@ const deleteReview = async (req, res) => {
 };
 
 module.exports = {
+  getReviewsByCourse,
   addReviewToCourse,
   editReview,
   deleteReview
