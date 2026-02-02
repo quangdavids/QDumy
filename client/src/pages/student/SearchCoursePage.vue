@@ -1,8 +1,7 @@
 <script setup>
-import { ref, computed, watchEffect, onMounted } from "vue";
+import { ref, computed,  watch, onMounted } from "vue";
 import CourseCard from "../../components/CourseCard.vue";
 import { useRoute, useRouter } from "vue-router";
-import { searchCourseAPI } from "../../helpers/api";
 import axios from "axios";
 const showAll = ref(false);
 const route = useRoute();
@@ -43,27 +42,31 @@ const totalPages = ref(1)
 const totalProducts = ref(0)
 const limit = ref(9)
 const displaySearch = async () => {
-  let q = `${api}courses/search?query=${route.query.query}&page=${currentPage.value}&limit=${limit.value}`
-  if (!route.query.query) return;
+  if (!route.query.query) {
+    searchResults.value = [];
+    return;
+  }
+
   try {
-    if (level.value !== "") {
-       q = q + `&level=${level.value}`
-    }
-    if (priceType.value !== "") {
-      q = q + `&priceType=${priceType.value}`
-    }
-    
-    console.log(priceType.value)
-    console.log(level.value)
-    const response = await axios.get(q)
-    totalPages.value = response.data.totalPages
-    currentPage.value = response.data.currentPage
-    totalProducts.value = response.data.totalCourse
-    console.log("Total pages: " + totalPages.value )
-    console.log("Current page: " + currentPage.value )
-    console.log("Total products " + totalProducts.value)
-    
-    console.log(q)
+    const response = await axios.get(`${api}courses/search`, {
+      params: {
+        query: route.query.query,
+        page: route.query.page || 1,
+        limit: limit.value,
+        level: route.query.level,
+        priceType: route.query.priceType,
+      },
+      paramsSerializer: {
+        indexes: null, 
+      },
+    });
+    totalPages.value = response.data.totalPages;
+    // currentPage.value = response.data.currentPage
+    totalProducts.value = response.data.totalCourse;
+
+    console.log("Total pages: " + totalPages.value);
+    console.log("Current page: " + currentPage.value);
+    console.log("Total products " + totalProducts.value);
 
     searchResults.value = response.data.course;
     console.log(response);
@@ -97,10 +100,46 @@ const handleNavigation = function (id) {
   }
 };
 
-watchEffect((route.query.query, displaySearch));
-
 onMounted(() => {
-  displaySearch();
+  level.value = route.query.level || [];
+  priceType.value = route.query.priceType || "";
+  currentPage.value = Number(route.query.page) || 1;
+});
+
+watch(
+  () => route.query,
+  () => {
+    displaySearch();
+  },
+  { immediate: true }
+);
+
+watch(
+  () => route.query,
+  () => {
+    level.value = Array.isArray(route.query.level)
+      ? route.query.level
+      : route.query.level
+      ? [route.query.level]
+      : [];
+
+    priceType.value = route.query.priceType || "";
+    currentPage.value = Number(route.query.page) || 1;
+  },
+  { immediate: true }
+);
+
+watch([level, priceType, currentPage], () => {
+  if (!route.query.query) return;
+
+  router.replace({
+    query: {
+      ...route.query,
+      level: level.value.length ? level.value : undefined,
+      priceType: priceType.value || undefined,
+      page: currentPage.value > 1 ? currentPage.value : undefined,
+    },
+  });
 });
 
 
@@ -159,8 +198,7 @@ const openFilter = function () {
         <br />
 
         <p class="font-bold text-lg mb-2">Language</p>
-        <div
-          v-for="(language, index) in displayedLanguages"
+        <div v-for="language in displayedLanguages"
           class="flex flex-col"
         >
           <div class="flex gap-3">
