@@ -1,7 +1,7 @@
-const Course = require("../models/course");
-const Lecturer = require("../models/lecturer");
-const User = require("../models/users");
-const Review = require("../models/review");
+const Course = require("../models/courseSchema");
+const Lecturer = require("../models/lecturerSchema");
+const User = require("../models/usersSchema");
+const Review = require("../models/reviewSchema");
 
 const getReviewsByCourse = async (req, res) => {
   try {
