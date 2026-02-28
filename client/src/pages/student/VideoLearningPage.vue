@@ -4,16 +4,23 @@ import "plyr/dist/plyr.css";
 import { onMounted, ref, computed } from "vue";
 import { nextTick } from "vue";
 import axios from "axios";
+import { useRoute } from 'vue-router'
+import { useAuthStore } from "../../stores/auth.store";
+import { storeToRefs } from "pinia";
+
 onMounted(() => {
   const player = new Plyr("#player");
 });
 
+
 const courseLessons = ref([]);
 let courseJSON = ref("");
+const route = useRoute()
+const courseId = route.params.courseId
 const getLessonData = async () => {
   try {
     const response = await axios.get(
-      "http://localhost:3000/api/courses/6894d50a07cfcbc6c079476a/lessons"
+      `http://localhost:3000/api/courses/${courseId}/lessons`
     );
     console.log(response);
     courseLessons.value = response.data.lessonsList;
@@ -29,7 +36,7 @@ onMounted(() => {
   getLessonData();
 });
 
-let playingIndex = ref(1);
+let playingIndex = ref(0);
 let videoRef = ref(null);
 function selectVideo(index) {
   playingIndex.value = index;
@@ -42,14 +49,43 @@ function selectVideo(index) {
   });
 }
 
+
+const progressPercent = ref("")
+const authStore = useAuthStore();
+const { user } = storeToRefs(authStore)
+const handleVideoEnded = async () => {
+  try{
+    const response = await axios.post(`http://localhost:3000/api/progress/mark-complete/${user.value._id}`,
+      { 
+        courseId: courseId,
+        lessonId: courseLessons.value[playingIndex.value]._id 
+      },
+    )
+    progressPercent.value = response.data.progressPercent
+  } catch (err) {
+    console.log("Error in marking completion", err)
+  }
+}
+
 const videoPlaying = computed(() => {
   if (courseLessons.value.length > 0) {
+    
     return courseLessons.value[playingIndex.value]?.videoUrl || "";
   }
   return "";
 });
 
+
+const formatDuration = (seconds) => {
+    const totalSeconds = Math.round(seconds)
+
+    const minutes = Math.floor(totalSeconds / 60)
+    const remainingSeconds = totalSeconds % 60
+     return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`
+}
+
 console.log(playingIndex.value);
+
 </script>
 
 <template>
@@ -65,12 +101,13 @@ console.log(playingIndex.value);
       <video
         ref="videoRef"
         id="player"
-       
+        @ended="handleVideoEnded"
         class=" aspect-video w-full object-cover mx-auto"
         preload="auto"
         autoplay
         controls
       >
+       <source :src="videoPlaying" type="video/webm" />
         <source :src="videoPlaying" type="video/mp4" />
       </video>
       </div>
@@ -122,7 +159,7 @@ console.log(playingIndex.value);
           {{ lesson.title }}
           <div>
             <i class="fa-solid fa-tv mr-2"></i>
-            {{ lesson.duration }}
+            {{ formatDuration(lesson.duration) }}
           </div>
         </div>
       </div>

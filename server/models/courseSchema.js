@@ -22,7 +22,7 @@ const courseSchema = mongoose.Schema(
     categories: { type: String },
     level: { type: String },
     review: [{ type: Schema.Types.ObjectId, ref: "Review" }],
-    status: { type: String, enum: ["In Progress", "Completed"] },
+    status: { type: String, enum: ["ongoing", "completed"] },
     studentsEnrol: { type: Number, default: 0 },
   },
   { timestamps: true }
