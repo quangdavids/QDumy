@@ -126,4 +126,4 @@ const rejectCourse = async (req, res) => {
   }
 };
 
-module.exports = { getPendingCourses, publishCourse, rejectCourse };
+module.exports = { getPendingCourses, publishCourse, rejectCourse, loginAsAdmin };
