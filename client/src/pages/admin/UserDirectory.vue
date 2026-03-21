@@ -2,12 +2,16 @@
 import axios from "axios";
 import { onMounted, ref } from "vue";
 import dayjs from "dayjs"
+import { useRouter } from "vue-router";
+
+
 const users = ref("");
 const totalUsers = ref("");
-
+const router = useRouter()
 const limit = ref(6);
 const totalPages = ref(1)
 const currentPage = ref(1)
+
 const getAllUsers = async () => {
   try {
     const response = await axios.get(`http://localhost:3000/api/user/all/?page=${currentPage.value}&limit=${limit.value}` );
@@ -35,6 +39,16 @@ const changePage = (newPage) => {
   }
 };
 
+const blockUser = async (userId) => {
+  try {
+    const response = await axios.put(`http://localhost:3000/api/admin/block/${userId}`)
+    console.log(response.data)
+    getAllUsers()
+  } catch (err) {
+    console.log(err)
+  }
+}
+
 const deleteUser = async (userId) => {
   try {
     const response = await axios.delete(`http://localhost:3000/api/admin/delete-user/${userId}`)
@@ -45,6 +59,16 @@ const deleteUser = async (userId) => {
   }
 }
 
+const toUserProfile = async (userId) => {
+    try {
+      router.push({
+        path: `/user/dashboard`,
+        params: userId
+      })
+    } catch (err) {
+      console.log(err)
+    }
+}
 onMounted(() => {
   getAllUsers();
 });
@@ -55,42 +79,7 @@ onMounted(() => {
     <p class="text-[30px] font-bold uppercase mx-auto">Users Directory</p>
   </div>
   <div class="py-2 container mx-auto">
-    <div class="grid lg:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-6 p-3 mb-4">
-      <div class="bg-gray-100 p-6 rounded-lg border-l-blue-400 border-l-4">
-        <div class="flex justify-between items-center">
-          <p class="font-bold thacking-widest text-gray-700">Active Users</p>
-          <div class="rounded-lg bg-blue-200 p-3">
-            <i class="fa fa-users text-blue-700 text-lg"></i>
-          </div>
-        </div>
-        <p class="font-bold text-[25px] text-blue-500">20</p>
-      </div>
-      <div class="bg-gray-100 p-6 rounded-lg border-l-purple-400 border-l-4">
-        <div class="flex justify-between gap-3 items-center">
-          <p class="font-bold thacking-wide text-gray-700">
-            Active Insthuctors
-          </p>
-          <div class="rounded-lg bg-purple-200 p-3">
-            <i class="fa fa-graduation-cap text-purple-700 text-lg"></i>
-          </div>
-        </div>
-
-        <p class="font-bold text-[25px] text-purple-500">201</p>
-      </div>
-
-      <div class="bg-gray-100 p-6 rounded-lg border-l-yellow-400 border-l-4">
-        <div class="flex justify-between items-center">
-          <p class="font-bold thacking-wide text-sm text-gray-700">
-            New Signups (24h)
-          </p>
-
-          <div class="rounded-lg bg-yellow-200 p-3">
-            <i class="fa fa-book text-yellow-700 text-lg"></i>
-          </div>
-        </div>
-        <p class="font-bold text-[25px] text-yellow-500">32</p>
-      </div>
-    </div>
+    
 
     <div class="p-3 mx-auto">
       <div class="p-3 rounded-t-lg border-slate-800/20 border-1 border-b-0">
@@ -148,7 +137,7 @@ onMounted(() => {
           <tr class="hover:bg-slate-50 border-slate-200 border-1">
             <td class="flex py-4 px-2 gap-4">
               <img
-                src="/images/students/alexa.png"
+                :src="user.profileImg"
                 class="w-15 h-15 outline-1 outline-gray-300 rounded-full"
               />
               <div>
@@ -169,18 +158,27 @@ onMounted(() => {
               </p>
             </td>
             <td class="text-center">
-              <div
+              <div v-if="user.status === `Active`"
                 class="text-green-500 flex gap-3 justify-center items-center text-sm font-semibold tracking-wide"
               >
                 <div class="bg-green-500 w-3 h-3 rounded-full"></div>
                 <p>Active</p>
               </div>
+
+                 <div v-else
+                class="text-red-500 flex gap-3 justify-center items-center text-sm font-semibold tracking-wide"
+              >
+                <div class="bg-red-500 w-3 h-3 rounded-full"></div>
+                <p>Suspended</p>
+              </div>
             </td>
             <td class="text-center">
               <div class="flex gap-5 justify-center">
-                <i class="fa fa-eye text-lg hover:text-blue-500 cursor-pointer duration-200"></i>
+                <i class="fa fa-eye text-lg hover:text-blue-500 cursor-pointer duration-200"
+                @click="toUserProfile(user._id)"></i>
                 <i class="fa fa-comments text-lg hover:text-green-500 cursor-pointer duration-200"></i>
-                <i class="fa fa-ban text-lg hover:text-orange-500 cursor-pointer duration-200"></i>
+                <i class="fa fa-ban text-lg hover:text-orange-500 cursor-pointer duration-200"
+                @click="blockUser(user._id)"></i>
                  <i class="fa fa-trash text-lg hover:text-red-500 cursor-pointer duration-200"
                  @click="deleteUser(user._id)"></i>
               </div>
@@ -192,7 +190,7 @@ onMounted(() => {
         <div class="flex gap-3 justify-end">
           <button
           @click="changePage(currentPage - 1)"
-          :disabled="currentPage ===1"
+          :disabled="currentPage === 1"
             class="outline-1 outline-gray-400 rounded-lg h-12 w-12 disabled:text-gray-300 cursor-pointer disabled:outline-gray-300"
           >
             <i class="fa fa-chevron-left"></i>
@@ -204,7 +202,7 @@ onMounted(() => {
           </button>
           <button
           @click ="changePage(currentPage + 1)"
-          :disabled="currentPage < totalPages"
+          :disabled="currentPage + 1 === totalPages"
             class="outline-1 outline-gray-400 rounded-lg h-12 w-12 disabled:text-gray-300 cursor-pointer disabled:outline-gray-300"
           >
             <i class="fa fa-chevron-right"></i>
