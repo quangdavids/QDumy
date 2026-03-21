@@ -16,7 +16,6 @@ import CreateCourse from "../pages/instructor/InstructorCourseList.vue";
 import InstructorProfile from "../pages/instructor/InstructorProfile.vue";
 import StudentProfilePage from "../pages/students/StudentProfilePage.vue";
 import CreateCoursePage from "../pages/instructor/CreateCoursePage.vue";
-import EditCoursePage from "../pages/instructor/EditCoursePage.vue";
 import AddLesson from "../pages/instructor/AddLesson.vue";
 import StudentDashboard from "../pages/students/StudentDashboardPage.vue";
 import StudentAnalytics from "../pages/students/StudentAnalyticsPage.vue";

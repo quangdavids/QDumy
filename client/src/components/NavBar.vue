@@ -1,5 +1,112 @@
 <script setup>
-    
+import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/vue";
+import { RouterLink, useRouter, useRoute } from "vue-router";
+import { ref, onMounted, computed } from "vue";
+import { useAuthStore } from "../stores/auth.store";
+import { useCartStore } from "../stores/cart.store";
+import { useNotificationStore } from "../stores/notification.store";
+import { storeToRefs } from "pinia";
+import axios from "axios";
+
+let searchQuery = ref("");
+const authStore = useAuthStore();
+const cartStore = useCartStore();
+const notificationStore = useNotificationStore();
+const { isAuthenticated, user } = storeToRefs(authStore);
+const { courses: cartCourses } = storeToRefs(cartStore);
+const { notifications, unreadCount } = storeToRefs(notificationStore);
+let results = ref([]);
+const router = useRouter();
+let menuOpen = ref(false);
+const isMobileMenuOpen = ref(false);
+
+const cartCount = computed(() => cartCourses.value?.length || 0);
+const unread = computed(() => unreadCount.value || 0);
+const signOut = async function () {
+  try {
+    await authStore.logout();
+    router.push("/login");
+  } catch (e) {
+    console.log(e);
+  }
+};
+
+const route = useRoute();
+
+const handleSearch = async (e) => {
+  try {
+    if (searchQuery.value.trim()) {
+      await router.push({
+        path: "/course/search",
+        query: { query: searchQuery.value },
+      });
+      isMobileMenuOpen.value = false;
+    }
+  } catch (error) {
+    console.error(`Error: ${error}`);
+  }
+};
+
+const createLecturer = async (lecturerId) => {
+  try {
+    const response = await axios.post(
+      `http://localhost:3000/api/lecturer/${lecturerId}`,
+    );
+    router.push({
+      path: "/instructor",
+      params: lecturerId,
+    });
+    isMobileMenuOpen.value = false;
+    console.log(response.data);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const toLecturer = async (lecturerId) => {
+  router.push({
+    path: "/instructor",
+    params: lecturerId,
+  });
+};
+
+const toStudentDashboard = async () => {
+  router.push({
+    path: `/user/dashboard/${user.value._id}`
+  })
+}
+
+const status = ref(false);
+const lecturer = ref("");
+const getLecturerStatus = async () => {
+  try {
+    const response = await axios.get(
+      `http://localhost:3000/api/lecturer/${user.value._id}`,
+    );
+    if (response) {
+      status.value = true;
+    } else {
+      status.value = false;
+    }
+    console.log(response.data);
+    console.log(status.value);
+  } catch (err) {
+    console.log(err);
+  }
+};
+const closeMobileMenu = () => {
+  isMobileMenuOpen.value = false;
+};
+
+onMounted(() => {
+
+  cartStore.fetchCourses();
+  notificationStore.fetchNotfications();
+  getLecturerStatus();
+});
+
+
+console.log(user);
 </script>
 
 <template>
@@ -8,9 +115,18 @@
       <div class="flex justify-between text-white items-center h-16">
         <!-- Logo Section -->
         <div class="flex-shrink-0 flex items-center gap-2">
-          <RouterLink to="/" class="flex items-center hover:opacity-80 transition-opacity">
-            <img src="/images/quangdemy.png" class="h-8 w-auto" alt="QuangStudy Logo" />
-            <span class="font-bold text-lg text-gray-900 ml-2 hidden sm:inline">QuangStudy</span>
+          <RouterLink
+            to="/"
+            class="flex items-center hover:opacity-80 transition-opacity"
+          >
+            <img
+              src="/images/quangdemy.png"
+              class="h-8 w-auto"
+              alt="QuangStudy Logo"
+            />
+            <span class="font-bold text-lg text-gray-900 ml-2 hidden sm:inline"
+              >QuangStudy</span
+            >
           </RouterLink>
         </div>
 
@@ -34,8 +150,24 @@
             </div>
           </form>
 
-          <!-- Desktop Menu Items -->
-          <div class="flex items-center space-x-8 ml-8">
+          <div class="flex items-center justify-end space-x-8 ml-8">
+            <!-- Become a Lecturer -->
+            <div
+              v-if="!status"
+              class="hover:text-green-600 transition-colors cursor-pointer text-sm font-medium"
+              @click="createLecturer(user?._id)"
+            >
+              Become a Lecturer
+            </div>
+
+            <div
+              v-else
+              @click="toLecturer(user._id)"
+              class="hover:text-green-600 transition-colors cursor-pointer text-sm font-medium"
+            >
+              To Lecturer Area
+            </div>
+
             <!-- Cart -->
             <RouterLink
               to="/cart"
@@ -51,22 +183,102 @@
               </span>
             </RouterLink>
 
-            <!-- Become a Lecturer -->
-            <div
-              class="hover:text-green-600 transition-colors cursor-pointer text-sm font-medium"
-              @click="toLecturer(user?._id)"
-              title="Become an Instructor"
-            >
-              Teach
-            </div>
+            <Menu as="div" class="relative z-1000">
+              <MenuButton
+                class="flex gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+              >
+                <div>
+                  <i
+                    class="fa-solid fa-bell hover:text-green-600 text-white text-lg"
+                  ></i>
+                  <span
+                    v-if="unreadCount > 0"
+                    class="absolute -top-2 -right-3 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center font-semibold"
+                  >
+                    {{ unread }}
+                  </span>
+                </div>
+              </MenuButton>
 
-            <!-- Auth Menu -->
+              <!-- Dropdown Menu -->
+              <transition-group
+                enter-active-class="transition ease-out duration-100"
+                enter-from-class="transform opacity-0 scale-95"
+                enter-to-class="transform opacity-100 scale-100"
+                leave-active-class="transition ease-in duration-75"
+                leave-from-class="transform opacity-100 scale-100"
+                leave-to-class="transform opacity-0 scale-95"
+              >
+                <MenuItems
+                  class="absolute  bg-white text-black -right-25 mt-2 w-90 rounded-lg shadow-lg border divide-y divide-gray-100 overflow-hidden"
+                >
+                  <p class="text-lg font-bold p-2 border-b-1 border-slate-200">
+                    Notifications
+                  </p>
+                  <div >
+                    <MenuItem
+                     
+                      v-if="notifications.length > 0"
+                      v-for="notification in notifications"
+                      :key="notification._id"
+                      v-slot="{ active }"
+                    >
+                      <RouterLink :to="notification.link">
+                        <div
+                          @click="
+                            notificationStore.readNotification(notification._id)
+                          "
+                          :class="
+                            notification.isRead
+                              ? `border-b-1 w-full bg-slate-100 border-gray-400 p-6  flex justify-between items-center gap-3 `
+                              : `border-b-1 w-full hover:bg-slate-100 border-gray-400 p-6 items-center flex justify-between gap-3`
+                          "
+                        >
+                          <div class="p-2 rounded-full">
+                            <i
+                              class="fa-solid fa-bell text-xl text-green-600"
+                            ></i>
+                          </div>
+                          <div class="text-sm w-full">
+                            Kha Banh mentioned you in a message
+                          </div>
+
+                          <div
+                            class="flex items-start"
+                            @click="
+                              notificationStore.deleteNotification(
+                                notification._id,
+                              )
+                            "
+                          >
+                            <i
+                              class="fa fa-x text-sm hover:text-red-500 duration-200 cursor-pointer"
+                            ></i>
+                          </div>
+                        </div>
+                      </RouterLink>
+                    </MenuItem>
+
+                    <MenuItem class="py-5 px-4" v-else>
+                      <div class="flex justify-center text-sm">
+                        You have no notifications
+                      </div>
+                    </MenuItem>
+                  </div>
+                </MenuItems>
+              </transition-group>
+            </Menu>
+
             <template v-if="isAuthenticated">
               <Menu as="div" class="relative z-1000">
-                <MenuButton class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                <MenuButton
+                  class="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                >
                   <div class="text-right hidden sm:block">
                     <p class="text-xs">Welcome</p>
-                    <p class="text-sm font-medium text-gray-900">{{ user?.username }}</p>
+                    <p class="text-sm font-medium text-gray-900">
+                      {{ user?.username }}
+                    </p>
                   </div>
                   <img
                     :src="user.profileImg"
@@ -89,22 +301,27 @@
                   >
                     <!-- User Info -->
                     <div class="px-4 py-3">
-                      <p class="text-sm font-medium text-gray-900">{{ user?.username }}</p>
-                      <p class="text-xs text-gray-500 mt-1">{{ user?.email }}</p>
+                      <p class="text-sm font-medium text-gray-900">
+                        {{ user?.username }}
+                      </p>
+                      <p class="text-xs text-gray-500 mt-1 wrap-break-word">
+                        {{ user?.email }}
+                      </p>
                     </div>
 
                     <!-- Menu Items -->
                     <div class="py-1">
                       <MenuItem v-slot="{ active }">
-                        <RouterLink
-                          to="/user/dashboard"
+                        <div
+                          @click="toStudentDashboard"
                           :class="[
                             active ? 'bg-gray-100' : '',
                             'block px-4 py-2 text-sm  hover:text-gray-900 transition-colors',
                           ]"
                         >
-                          <i class="fa-solid fa-chart-line mr-2 w-4"></i>Dashboard
-                        </RouterLink>
+                          <i class="fa-solid fa-chart-line mr-2 w-4"></i
+                          >Dashboard
+                       </div>
                       </MenuItem>
                       <MenuItem v-slot="{ active }">
                         <RouterLink
@@ -125,7 +342,8 @@
                             'block px-4 py-2 text-sm  hover:text-gray-900 transition-colors',
                           ]"
                         >
-                          <i class="fa-solid fa-shopping-cart mr-2 w-4"></i>My Cart
+                          <i class="fa-solid fa-shopping-cart mr-2 w-4"></i>My
+                          Cart
                         </RouterLink>
                       </MenuItem>
                     </div>
@@ -140,7 +358,8 @@
                             'w-full text-left px-4 py-2 text-sm text-red-600 hover:text-red-700 transition-colors',
                           ]"
                         >
-                          <i class="fa-solid fa-sign-out-alt mr-2 w-4"></i>Sign Out
+                          <i class="fa-solid fa-sign-out-alt mr-2 w-4"></i>Sign
+                          Out
                         </button>
                       </MenuItem>
                     </div>
@@ -169,7 +388,10 @@
         <!-- Mobile menu button -->
         <div class="flex lg:hidden gap-4">
           <!-- Mobile Cart -->
-          <RouterLink to="/cart" class="relative hover:text-green-600 transition-colors">
+          <RouterLink
+            to="/cart"
+            class="relative hover:text-green-600 transition-colors"
+          >
             <i class="fa-solid fa-shopping-cart text-xl"></i>
             <span
               v-if="cartCount > 0"
@@ -184,7 +406,10 @@
             @click="isMobileMenuOpen = !isMobileMenuOpen"
             class="hover:text-green-600 transition-colors"
           >
-            <i class="fa-solid text-xl" :class="isMobileMenuOpen ? 'fa-times' : 'fa-bars'"></i>
+            <i
+              class="fa-solid text-xl"
+              :class="isMobileMenuOpen ? 'fa-times' : 'fa-bars'"
+            ></i>
           </button>
         </div>
       </div>
@@ -199,7 +424,10 @@
       leave-from-class="transform scale-100 opacity-100"
       leave-to-class="transform scale-95 opacity-0"
     >
-      <div v-if="isMobileMenuOpen" class="lg:hidden bg-white border-t border-gray-200">
+      <div
+        v-if="isMobileMenuOpen"
+        class="lg:hidden bg-white border-t border-gray-200"
+      >
         <div class="px-2 pt-2 pb-3 space-y-1">
           <!-- Mobile Search -->
           <form @submit.prevent="handleSearch" class="p-2 mb-2">
@@ -224,8 +452,8 @@
             <div
               class="block px-3 py-2 rounded-md hover:bg-gray-100 cursor-pointer font-medium text-sm"
               @click="
-                toLecturer(user?._id)
-                closeMobileMenu()
+                toLecturer(user?._id);
+                closeMobileMenu();
               "
             >
               <i class="fa-solid fa-chalkboard-user mr-2 w-4"></i>Teach
@@ -248,8 +476,8 @@
               </RouterLink>
               <button
                 @click="
-                  signOut()
-                  closeMobileMenu()
+                  signOut();
+                  closeMobileMenu();
                 "
                 class="w-full text-left px-3 py-2 rounded-md text-red-600 hover:bg-red-50 text-sm font-medium"
               >
@@ -279,7 +507,7 @@
   </nav>
 </template>
 
-<style lang="css" scoped>
+<style scoped>
 .sticky {
   position: sticky;
   top: 0;
