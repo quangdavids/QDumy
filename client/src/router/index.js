@@ -13,47 +13,53 @@ import SearchCourse from "../pages/students/SearchCoursePage.vue";
 import VideoLearningPage from "../pages/students/VideoLearningPage.vue";
 import InstuctorDashboard from "../pages/instructor/InstructorDashboard.vue"
 import CreateCourse from "../pages/instructor/InstructorCourseList.vue";
-import InstructorProfile from "../pages/instructor/InstructorProfile.vue";
+import InstructorProfile from "../pages/instructor/EditInstructorProfile.vue";
 import StudentProfilePage from "../pages/students/StudentProfilePage.vue";
 import CreateCoursePage from "../pages/instructor/CreateCoursePage.vue";
+// import EditCoursePage from "../pages/instructor/EditCoursePage.vue";
 import AddLesson from "../pages/instructor/AddLesson.vue";
 import StudentDashboard from "../pages/students/StudentDashboardPage.vue";
 import StudentAnalytics from "../pages/students/StudentAnalyticsPage.vue";
 import HelpSupport from "../pages/other/HelpSupportPage.vue";
 import Checkout from "../pages/students/Checkout.vue";
 import ContactPage from "../pages/other/ContactPage.vue";
-import InstuctorPage from "../pages/instructor/InstuctorPage.vue";
+import InstuctorPage from "../pages/instructor/InstructorPage.vue";
 import EnrolledStudents from "../pages/instructor/EnrolledStudents.vue";
-import QuizFeedback from "../pages/students/QuizFeedback.vue";
+// import QuizFeedback from "../pages/students/QuizFeedback.vue";
 import OverviewPage from "../pages/admin/OverviewPage.vue";
 import AdminPage from "../pages/admin/AdminPage.vue";
+import LessonListPage from "../pages/instructor/LessonListPage.vue";
+import UserDirectory from "../pages/admin/UserDirectory.vue";
+import CourseApproval from "../pages/admin/CourseApproval.vue";
+import { useAuthStore } from "../stores/auth.store";
 const routes = [
-  { path: "/", component: HomePage },
-  { path: "/home", component: HomePage },
-  { path: "/login", component: LoginPage, meta: { hideNavbar: true, hideFooter: true } },
-  { path: "/register", component: RegisterPage },
+  { path: "/", component: HomePage, meta: {showChatbot: true} },
+  { path: "/home", component: HomePage, meta: {showChatbot: true} },
+  { path: "/login", component: LoginPage,  },
+  { path: "/register", component: RegisterPage,   },
   // meta:
   // {
   //   hideNavbar: true,
   //   hideFooter: true,
 
   // }
-  { path: "/aboutUs", component: AboutUsPage },
-  { path: "/course/search", component: SearchCourse },
+  { path: "/aboutUs", component: AboutUsPage, meta: {showChatbot: true} },
+  { path: "/course/search", component: SearchCourse, meta: {showChatbot: true} },
   {
-    path: "/course/lecture",
+    path: "/course/:courseId/lecture",
+    name: "CourseLecture",
     component: VideoLearningPage,
-    meta: { hideNavbar: true },
+    meta: { hideNavbar: true, showChatbot: true },
   },
-  { path: "/course/quiz/feedback",
-    component: QuizFeedback,
-    meta: {hideFooter: true}
-  },
+  // { path: "/course/quiz/feedback",
+  //   component: QuizFeedback,
+  //   meta: {hideFooter: true}
+  // },
   { path: "/instructor/profile/:lecturerId", component: InstructorProfile },
   
-  { path: "/cart", component: Cart },
+  { path: "/cart", component: Cart, meta: {showChatbot: true} },
   { path: "/checkout", component: Checkout,
-     meta: { hideFooter: true },
+     meta: { hideFooter: true, showChatbot: true },
    },
    { path: "/payment-success", component: PaymentSuccess,
      meta: { hideNavbar: true, hideFooter: true }
@@ -61,21 +67,23 @@ const routes = [
    { path: "/payment-cancel", component: PaymentCancel,
      meta: { hideNavbar: true, hideFooter: true }
    },
-   { path: "/contact", component: ContactPage},
+   { path: "/contact", component: ContactPage, meta: {showChatbot: true}},
   {
     path: "/support",
     component:  HelpSupport,
-
+    meta: {showChatbot: true}
     
   },
 
   {
     path: "/admin",
     component: AdminPage,
-    meta: {hideNavbar: true},
+    meta: {hideNavbar: true, requiresAuth: true, role: 'admin'},
     children: [
       {path: "", component: OverviewPage},
-      {path: "overview", component: OverviewPage}
+      {path: "overview", component: OverviewPage},
+      {path: "user-directory", component: UserDirectory},
+      {path: "course-approval", component: CourseApproval}
     ]
   },
   { path: "/course/:id", component: CourseDetails, props: true },
@@ -121,10 +129,23 @@ const routes = [
       },
 
       {
-        path: "course/add-lesson/",
+        path: "course/add-lesson/:courseId/",
         component: AddLesson,
         meta: { hideSidebar: true },
       },
+
+      {
+        path: "course/view-lessons/:courseId/",
+        component: LessonListPage,
+      },
+
+      
+      {
+        path: "course/edit-lesson/:lessonId/",
+        component: AddLesson,
+       
+      },
+
     ],
   },
 
@@ -136,5 +157,21 @@ const router = createRouter({
   history: createWebHistory(),
   routes,
 });
+
+router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore();
+  const userRole = authStore.user?.role;
+
+ 
+  if (to.meta.role && to.meta.role !== userRole) {
+   
+    if (to.meta.role === 'admin' && userRole !== 'admin') {
+      return next({ path: '/home' }); 
+    }
+  }
+
+  next(); 
+});
+
 
 export default router;

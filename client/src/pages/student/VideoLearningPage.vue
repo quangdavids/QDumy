@@ -13,6 +13,8 @@ onMounted(() => {
 });
 const router = useRouter()
 const courseLessons = ref([]);
+const authStore = useAuthStore();
+const { user } = storeToRefs(authStore);
 
 const route = useRoute();
 const open = ref(true);
@@ -23,15 +25,27 @@ const toggleLessonSection = function(){
 const courseId = route.params.courseId;
 const getLessonData = async () => {
   try {
-    const response = await axios.get(
-      `http://localhost:3000/api/courses/${courseId}/lessons`,
-    );
+    const userId = user.value?._id;
+    const url = userId 
+      ? `http://localhost:3000/api/courses/${courseId}/${userId}/lessons`
+      : `http://localhost:3000/api/courses/${courseId}/lessons`;
+    
+    const response = await axios.get(url);
     console.log(response);
     courseLessons.value = response.data.lessonsList;
     console.log(courseLessons.value);
 
   } catch (e) {
-    console.log(e);
+    console.error(e);
+    if (e.response?.status === 403) {
+      console.warn("Access denied: Course not purchased");
+      router.push({
+        path: `/course/${courseId}`,
+        query: { accessDenied: 'true' }
+      });
+    } else {
+      console.log(e);
+    }
   }
 };
 
@@ -109,8 +123,6 @@ const toggleCourseContentSection= function() {
 }
 
 const progressPercent = ref("");
-const authStore = useAuthStore();
-const { user } = storeToRefs(authStore);
 const handleVideoEnded = async () => {
   try {
     const response = await axios.post(

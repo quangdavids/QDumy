@@ -1,14 +1,84 @@
 import { defineStore } from "pinia";
 import axios from "axios";
 import { useAuthStore } from "./auth.store";
+import { io } from "socket.io-client";
 
 export const useNotificationStore = defineStore("notification", {
   state: () => ({
     notifications: [],
     unreadCount: 0,
+    socket: null,
+    isConnected: false,
   }),
   getters: {},
   actions: {
+    initSocket() {
+      if (this.socket) return;
+      
+      const authStore = useAuthStore();
+      if (!authStore.user) return;
+
+      this.socket = io("http://localhost:3000", {
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: 5,
+        transports: ["websocket"],
+      });
+
+      this.socket.on('connect', () => {
+        console.log('Socket connected');
+        this.isConnected = true;
+        // Join user's notification room
+        this.socket.emit('join-room', authStore.user._id);
+        // Fetch notifications after socket is connected
+        this.fetchNotfications();
+      });
+
+      // Listen for new notifications
+      this.socket.on('new-notification', (notification) => {
+        // Check if notification already exists to prevent duplicates
+        const exists = this.notifications.some((n) => n._id === notification._id);
+        if (!exists) {
+          this.notifications.unshift(notification);
+          this.updateUnreadCount();
+          console.log('New notification received:', notification);
+        }
+      });
+
+      // Listen for read notifications
+      this.socket.on('notification-read', (updatedNotification) => {
+        const index = this.notifications.findIndex((n) => n._id === updatedNotification._id);
+        if (index !== -1) {
+          this.notifications[index] = updatedNotification;
+          this.updateUnreadCount();
+        }
+      });
+
+      // Listen for deleted notifications
+      this.socket.on('notification-deleted', ({ notificationId }) => {
+        this.notifications = this.notifications.filter((n) => n._id !== notificationId);
+        this.updateUnreadCount();
+      });
+
+      this.socket.on('disconnect', () => {
+        console.log('Socket disconnected');
+        this.isConnected = false;
+      });
+    },
+
+    disconnectSocket() {
+      if (this.socket) {
+        this.socket.disconnect();
+        this.socket = null;
+        this.isConnected = false;
+      }
+    },
+
+    updateUnreadCount() {
+      this.unreadCount = this.notifications.filter((n) => !n.isRead).length;
+    },
+
     async fetchNotfications() {
       try {
         const authStore = useAuthStore();
@@ -16,7 +86,7 @@ export const useNotificationStore = defineStore("notification", {
           `http://localhost:3000/api/notification/${authStore.user._id}`,
         );
         this.notifications = response.data.notification;
-        this.unreadCount = this.notifications.filter((n) => !n.isRead).length;
+        this.updateUnreadCount();
         console.log(this.unreadCount);
       } catch (err) {
         console.log(err);
@@ -29,7 +99,7 @@ export const useNotificationStore = defineStore("notification", {
           `http://localhost:3000/api/notification/lecturer/${authStore.user._id}`,
         );
         this.notifications = response.data.notification;
-        this.unreadCount = this.notifications.filter((n) => !n.isRead).length;
+        this.updateUnreadCount();
         console.log(this.unreadCount);
       } catch (err) {
         console.log(err);
@@ -41,7 +111,6 @@ export const useNotificationStore = defineStore("notification", {
           `http://localhost:3000/api/notification/read/${notificationId}`,
         );
         console.log(response.data);
-      
       } catch (err) {
         console.log(err);
       }
@@ -53,7 +122,8 @@ export const useNotificationStore = defineStore("notification", {
           `http://localhost:3000/api/notification/${notificationId}`,
         );
         console.log(response.data);
-        this.fetchNotfications();
+        this.notifications = this.notifications.filter((n) => n._id !== notificationId);
+        this.updateUnreadCount();
       } catch (err) {
         console.log(err);
       }

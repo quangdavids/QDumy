@@ -1,6 +1,8 @@
 <script setup>
 import Banner from "../../components/Banner.vue";
 import CourseCard from "../../components/CourseCard.vue";
+import Navbar from "../../components/Navbar.vue";
+import Footer from "../../components/Footer.vue";
 import { register } from "swiper/element/bundle";
 import { Swiper, SwiperSlide } from "swiper/vue";
 import "swiper/css";
@@ -249,14 +251,16 @@ const handleNavigation = function (id) {
       768: { slidesPerView: 2 },
       1024: { slidesPerView: 3 },
     }"
-    class="w-full h-auto mx-auto"
+    class="w-full h-auto mx-auto "
   >
-    <SwiperSlide v-for="course in latestCourses" :key="course._id">
+    <SwiperSlide v-for="course in latestCourses" :key="course._id" class="p-3">
       <CourseCard
         :price="course.price"
         :title="course.title"
         :description="course.description"
         :images="course.courseImage"
+        :rating="course.rating"
+        :no-of-lessons="course.lessons.length"
         @click="handleNavigation(course._id)"
       />
     </SwiperSlide>
