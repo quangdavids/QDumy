@@ -15,9 +15,15 @@ const {
   getCoursesByLecturer,
   checkCourseBoughtStatus,
   getEnrolledCourses,
+  submitCourseForApproval,
+  getLessonDetails,
+  searchOwnedCourse,
+  getTotalLessonDuration
 } = require("../controller/courseController");
 
+
 router.get("/courses/search", searchCourse);
+router.get("/courses/search/:userId", searchOwnedCourse)
 router.get("/courses/bought/:userId/:courseId", checkCourseBoughtStatus)
 router.get("/courses", getAllCourses);
 router.get("/courses/latest", getLatestCourses);
@@ -37,9 +43,12 @@ router.post(
   upload.single("video"),
   addLessonToCourse
 );
-
+router.get("/courses/total-time/:courseId", getTotalLessonDuration)
+router.get("/courses/:courseId/:userId/lessons", getCourseLessons);
 router.get("/courses/:courseId/lessons", getCourseLessons);
-router.put("/:courseId/lessons/:lessonId", updateLessonInCourse);
+router.get("/courses/:lessonId/:userId/lessons/details", getLessonDetails)
+router.get("/courses/:lessonId/lessons/details", getLessonDetails)
+router.put("/:courseId/lessons/:lessonId", upload.single("video"), updateLessonInCourse);
 router.put(
   "/courses/:courseId",
   upload.fields([
@@ -48,6 +57,8 @@ router.put(
   ]),
   updateCourse
 );
+
+router.put("/courses/submission/:courseId", submitCourseForApproval)
 
 router.delete("/courses/:courseId", deleteCourse);
 
