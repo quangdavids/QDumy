@@ -33,7 +33,7 @@ const searchQuery = ref("")
 const isSearched = ref(false)
 
 const queryCourses = ref([])
-const searchCourse = async (req, res) => {
+const searchCourse = async () => {
   try {
     const response = await axios.get(`http://localhost:3000/api/courses/search/${user.value._id}?courseQuery=${searchQuery.value}`,
     )

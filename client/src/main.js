@@ -1,7 +1,7 @@
 import { createApp } from 'vue'
 import './style.css'
 import App from './App.vue'
-import router from './router/router'
+import router from './router/index'
 import PrimeVue from 'primevue/config';
 import '@fortawesome/fontawesome-free/css/all.css'
 import "/node_modules/flag-icons/css/flag-icons.min.css";
@@ -11,6 +11,8 @@ import ProgressBar from 'primevue/progressbar';
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import axios from 'axios';
+
+
 
 // Configure axios to send credentials (cookies) with all requests
 axios.defaults.withCredentials = true;
