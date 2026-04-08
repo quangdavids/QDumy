@@ -1,108 +1,311 @@
 <script setup>
-import { Bar } from 'vue-chartjs';
-import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js';
-import InstructorCourseList from './InstructorCourseList.vue';
+import { Bar, Line, Doughnut } from "vue-chartjs";
+import { onMounted, ref, computed } from "vue";
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  BarElement,
+  PointElement,
+  LineElement,
+  CategoryScale,
+  LinearScale,
+} from "chart.js";
 
-ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
+import { useAuthStore } from "../../stores/auth.store";
+import { storeToRefs } from "pinia";
+import axios from "axios";
+ChartJS.register(
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+);
 
-const chartData = {
-  labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul','Aug', "Sep", "Oct", "Nov", "Dec"],
-  datasets: [{
-    label: 'Monthly Revenue',
-    backgroundColor: '#f87979',
-    data: [140, 139, 200, 140, 100,154,200,129,210, 382,710,690]
-  }]
+const authStore = useAuthStore();
+const { user } = storeToRefs(authStore);
+const doughnutCourseCompletionData = ref({ labels: [], datasets: [] });
+const barDataEnrollments = ref({ labels: [], datasets: [] });
+const lineChartData = ref({ labels: [], datasets: [] });
+const lecturerId = ref();
+
+const lecturerData = ref("");
+const getLecturer = async () => {
+  try {
+    const response = await axios.get(
+      `http://localhost:3000/api/lecturer-data/${user.value._id}`,
+    );
+    lecturerData.value = response.data.lecturer;
+    console.log(response.data);
+    console.log(lecturerData.value);
+  } catch (err) {
+    console.log(err);
+  }
 };
-
-
-const options = {
-  responsive: true,
-  maintainAspectRatio: false, // Change to false to allow custom dimensions
-  plugins: {
-    legend: {
-      position: 'bottom',
-      labels: {
-        boxWidth: 20,
-        padding: 15,
-        font: {
-          size: 12
-        }
-      }
-    }
+const totalStudentsEnrolled = ref()
+const getTotalStudentsEnrolled = async () => {
+  try {
+    const findLecturer = await axios.get(
+      `http://localhost:3000/api/lecturer-data/${user.value._id}`,
+    );
+    const response = await axios.get(
+      `http://localhost:3000/api/lecturer/total-students/${findLecturer.data.lecturer._id}`,
+    );
+    totalStudentsEnrolled.value = response.data.totalStudent
+    console.log(totalStudentsEnrolled.value)
+  } catch (err) {
+    console.log(err);
   }
 };
 
+const getLecturerDailyRevenue = async () => {
+  try {
+    const findLecturer = await axios.get(
+      `http://localhost:3000/api/lecturer-data/${user.value._id}`,
+    );
+    const response = await axios.get(
+      `http://localhost:3000/api/daily-revenue/${findLecturer.data.lecturer._id}`,
+    );
+    lineChartData.value = {
+      labels: response.data.dailyRevenue.map((label) => label._id),
+      datasets: [
+        {
+          label: "Monthly Revenue",
+          backgroundColor: "#f87979",
+          data: response.data.dailyRevenue.map((data) => data.totalRevenue),
+        },
+      ],
+    };
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+const getCourseCompletion = async () => {
+  try {
+    const findLecturer = await axios.get(
+      `http://localhost:3000/api/lecturer-data/${user.value._id}`,
+    );
+    const response = await axios.get(
+      `http://localhost:3000/api/lecturer/completed-ongoing/${findLecturer.data.lecturer._id}`,
+    );
+
+    doughnutCourseCompletionData.value = {
+      labels: ["Completed", "Ongoing"],
+      datasets: [
+        {
+          backgroundColor: ["green", "yellow"], // Green, Blue, Amber
+          hoverOffset: 15, // Pops the segment out slightly on hover
+          data: [response.data.completed, response.data.ongoing],
+        },
+      ],
+    };
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+const getDailyEnrollments = async () => {
+  try {
+    const findLecturer = await axios.get(
+      `http://localhost:3000/api/lecturer-data/${user.value._id}`,
+    );
+    const response = await axios.get(
+      `http://localhost:3000/api/lecturer/enrollments/${findLecturer.data.lecturer._id}`,
+    );
+    console.log(response.data);
+    barDataEnrollments.value = {
+      labels: response.data.dailyEnrollments.map((date) => date._id),
+      datasets: [
+        {
+          label: "Daily Enrollments",
+          backgroundColor: "#0BDA51", // blue-500
+          borderRadius: 3, // Modern rounded corners
+          data: response.data.dailyEnrollments.map(
+            (data) => data.totalEnrollments,
+          ),
+        },
+      ],
+    };
+  } catch (err) {}
+};
+const lineOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  layout: {
+    padding: 20,
+  },
+  animation: {
+    duration: 1200,
+    easing: "easeOutQuart",
+  },
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: "#111827",
+      titleColor: "#F9FAFB",
+      bodyColor: "#F9FAFB",
+      padding: 12,
+      cornerRadius: 8,
+      displayColors: false,
+    },
+  },
+  scales: {
+    x: {
+      grid: { display: false },
+      ticks: { color: "#6B7280" },
+    },
+    y: {
+      grid: { color: "rgba(0,0,0,0.05)" },
+      ticks: { color: "#6B7280" },
+    },
+  },
+};
+
+const barOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  scales: {
+    y: {
+      beginAtZero: true,
+      grid: {
+        display: false,
+      },
+      barPercentage: 0.2, // 0.5 = 50% of the category width
+      // Adjusts the width of the category (bar + space)
+      categoryPercentage: 0.5,
+    },
+    x: {
+      grid: {
+        display: "bottom",
+      },
+    },
+  },
+  plugins: {
+    // Or set a fixed maximum width in pixels
+    maxBarThickness: 20,
+  },
+};
+
+const doughnutOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  cutout: "60%",
+  plugins: {
+    legend: {
+      position: "bottom",
+      labels: {
+        usePointStyle: true,
+        padding: 20,
+      },
+    },
+    tooltip: {
+      backgroundColor: "#111827",
+      padding: 10,
+      cornerRadius: 8,
+      displayColors: false,
+    },
+  },
+};
+onMounted(() => {
+  getLecturer();
+  getLecturerDailyRevenue();
+  getCourseCompletion();
+  getDailyEnrollments();
+  getTotalStudentsEnrolled()
+});
 </script>
 
 <template>
-  <div class="min-h-screen mx-auto ">
-    <p class="text-lg  mt-10 md:mx-auto text-center font-semibold 
-    text-[30px]">Dashboard</p>
+  <div class="min-h-screen mx-auto">
+    <p
+      class="text-lg mt-10 md:mx-auto text-center font-semibold text-[30px] mb-2"
+    >
+      Dashboard
+    </p>
 
-    <div class="grid lg:grid-cols-3  grid-cols-1 gap-2
-         md:grid-cols-2 mx-auto px-4 py-3">
-    <!-- <div
-      class="flex gap-2 p-3 flex-wrap"
-    > -->
-      <div class="border mx-auto flex-1  border-gray-300 w-75 rounded-lg p-5">
-        <div class="flex  gap-5">
-          <div
-            class="border border-gray-300 bg-green-200 w-15 h-15 flex justify-center items-center rounded-full"
-          >
-            <i
-              class="fa-solid fa-graduation-cap text-green-500 text-[30px]"
-            ></i>
-          </div>
-
-          <div class="flex flex-col">
-            <div>Total Course</div>
-            <div class="font-semibold text-xl">0</div>
+    <div class="grid lg:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-6 p-3">
+      <div
+        class="bg-gray-100 py-8 px-6 rounded-lg border-l-blue-400 border-l-4"
+      >
+        <div class="flex justify-between items-center">
+          <p class="font-bold tracking-widest text-gray-700">Total Students</p>
+          <div class="rounded-lg bg-blue-200 p-3">
+            <i class="fa fa-users text-blue-700 text-lg"></i>
           </div>
         </div>
+        <p class="font-bold text-[25px] text-blue-500">{{ totalStudentsEnrolled}}</p>
       </div>
-
-      <div class="border mx-auto flex-1 border-gray-300 w-75 rounded-lg p-5">
-        <div class="flex gap-5">
-          <div
-            class="border border-gray-300 bg-purple-200 w-15 h-15 flex justify-center items-center rounded-full"
-          >
-            <i class="fa-solid fa-user text-purple-500 text-[30px]"></i>
-          </div>
-
-          <div class="flex flex-col">
-            <div>Total Students</div>
-            <div class="font-semibold text-xl">0</div>
+      <div
+        class="bg-gray-100 py-8 px-6 rounded-lg border-l-green-400 border-l-4"
+      >
+        <div class="flex justify-between items-center">
+          <p class="font-bold tracking-wide text-gray-700">Total Revenue</p>
+          <div class="rounded-lg bg-green-200 p-3">
+            <i class="fa fa-dollar text-green-700 text-lg"></i>
           </div>
         </div>
+
+        <p class="font-bold text-[25px] text-green-500">
+          {{ lecturerData?.revenue }} $
+        </p>
       </div>
 
-      <div class="border mx-auto flex-1 border-gray-300 w-75 rounded-lg p-5">
-        <div class="flex  gap-5 mx-auto">
-          <div
-            class="border border-gray-300 bg-blue-200 w-15 h-15 flex justify-center items-center rounded-full"
-          >
-            <i class="fa-solid fa-dollar text-blue-500 text-[30px]"></i>
-          </div>
+      <div
+        class="bg-gray-100 py-8 px-6 rounded-lg border-l-yellow-400 border-l-4"
+      >
+        <div class="flex justify-between items-center">
+          <p class="font-bold tracking-wide text-md text-gray-700">
+            Total Courses
+          </p>
 
-          <div class="flex flex-col">
-            <div>Revenue</div>
-            <div class="font-semibold text-xl">0 $</div>
+          <div class="rounded-lg bg-yellow-200 p-3">
+            <i class="fa fa-book text-yellow-700 text-lg"> </i>
           </div>
         </div>
+        <p class="font-bold text-[25px] text-yellow-500">
+          {{ lecturerData?.ownedCourses?.length }}
+        </p>
       </div>
-        
     </div>
- 
-    <div class="chart-wrapper">
-      <Bar :data="chartData" :options="options" />
-    </div>
+    <div class="grid md:flex-row gap-3 p-8">
+      <div class="flex-1 border rounded-lg p-2 shadow-md border-gray-100">
+        <div class="font-semibold text-[18px] mt-2 py-2">Daily Revenue</div>
+        <div class="min-h-[300px]">
+          <Line :data="lineChartData" :options="lineOptions" />
+        </div>
+      </div>
 
-    <InstructorCourseList/>
-  
+      <div class="flex-1 border rounded-lg p-2 shadow-md border-gray-100">
+        <div class="font-semibold text-[18px] mt-2 py-2">
+          Course Completion Status
+        </div>
+        <div class="min-h-[300px]">
+          <Doughnut
+            :data="doughnutCourseCompletionData"
+            :options="doughnutOptions"
+          />
+        </div>
+      </div>
+
+      <div class="border rounded-lg p-6 mb-2 border-gray-100 shadow-md">
+        <div class="font-semibold text-[18px] mt-2 py-2">Daily Enrollments</div>
+        <div class="min-h-[300px]">
+          <Bar :data="barDataEnrollments" :options:="barOptions" />
+        </div>
+      </div>
+    </div>
 
     <!-- <div class="w-full  mx-auto px-7 py-4 overflow-x-auto "> -->
-    
-        <!-- <p class=" text-lg  mt-10 md:mx-auto text-center font-semibold 
+
+    <!-- <p class=" text-lg  mt-10 md:mx-auto text-center font-semibold 
     text-[30px] ">My Courses List</p>
         <div class="max-w-full overflow-x-auto  mx-auto  px-12 py-5">
              
@@ -160,20 +363,9 @@ const options = {
         </tbody>
       </table>
     </div> -->
-    </div>
-  
+  </div>
+
   <!-- </div> -->
 </template>
 
-<style lang="css" scoped>
-.chart-wrapper {
-  display: flex;
-  justify-content: center; /* Centers horizontally */
-  align-items: center;     /* Centers vertically (optional, depending on parent height) */
-  /* Define a size for the wrapper to control chart dimensions (e.g., max-width) */
-  width: 100%;
-  max-width: 950px; 
-  height: 200px;
-  margin: 0 auto; /* Also helps center the wrapper itself if its parent is wider */
-}
-</style>
+<style lang="css" scoped></style>
