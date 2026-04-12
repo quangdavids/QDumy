@@ -3,7 +3,6 @@ const User = require("../model/userSchema");
 const bcrypt = require("bcrypt");
 const Lecturer = require("../model/lecturerSchema");
 const Notification = require("../model/notificationSchema");
-const UserSession = require("../model/userSessionSchema");
 const CourseCompletion = require("../model/courseCompletionSchema");
 const { generateToken } = require("../config/jwt");
 

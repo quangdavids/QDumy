@@ -18,7 +18,7 @@ const {
   submitCourseForApproval,
   getLessonDetails,
   searchOwnedCourse,
-  getTotalLessonDuration
+  getTotalLessonDuration,
 } = require("../controller/courseController");
 
 

@@ -1,10 +1,15 @@
 const express = require("express");
 const router = express.Router();
-const {getPendingCourses, publishCourse, rejectCourse} = require('../controller/adminController')
+const {loginAsAdmin, getPendingCourses, publishCourse, rejectCourse, deleteUser, getGeneralWeeklyEnrollments, getUserGrowth, blockUser} = require('../controller/adminController')
 const { isAdmin } = require('../middlewares/adminMiddlewares')
 
-router.get('/admin/pending', isAdmin, getPendingCourses)
-router.put('/admin/publish/:courseId',isAdmin, publishCourse)
-router.put('/admin/reject/:courseId', isAdmin, rejectCourse)
+router.post('/admin/login',  loginAsAdmin)
+router.get('/admin/courses',  getPendingCourses)
+router.get('/admin/weekly-enrollments', getGeneralWeeklyEnrollments)
+router.get('/admin/user-growth', getUserGrowth)
+router.put('/admin/block/:userId', blockUser)
+router.put('/admin/publish/:courseId', publishCourse)
+router.put('/admin/reject/:courseId',  rejectCourse)
+router.delete('/admin/delete-user/:userId', deleteUser)
 
 module.exports = router
