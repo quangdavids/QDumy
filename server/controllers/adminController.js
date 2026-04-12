@@ -36,14 +36,12 @@ const loginAsAdmin = async (req, res) => {
       return res.status(400).json({ message: "Invalid password" });
     }
 
-    // Create session
-    const session = await UserSession.create({
-      userId: admin._id,
-    });
+    
+  
 
     // Generate token
     const token = generateToken(
-      { userId: admin._id, sessionId: session._id },
+      { userId: admin._id },
       res,
     );
 
@@ -56,7 +54,7 @@ const loginAsAdmin = async (req, res) => {
         role: admin.role,
       },
       token: token,
-      sessionId: session._id,
+  
     });
   } catch (error) {
     console.error("Admin login error:", error);

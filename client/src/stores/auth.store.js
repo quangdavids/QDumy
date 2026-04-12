@@ -23,12 +23,14 @@ export const useAuthStore = defineStore("auth", {
           console.log("Register response:", response.data.user); 
           this.user = response.data.user;
           this.token = response.data.token;
+          this.error = null;
           
           localStorage.setItem("user", JSON.stringify(this.user));
           localStorage.setItem("token", this.token);
        
       } catch (err) {
-        this.error = err.response?.data?.user?.message || "Registration failed";
+        this.error = err.response?.data?.message || "Registration failed";
+        throw err;
       }
     },
     async signIn(data) {

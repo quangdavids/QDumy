@@ -1,60 +1,17 @@
 const User = require("../model/userSchema.js");
 const bcrypt = require("bcrypt");
-const UserSession = require("../model/userSessionSchema.js")
-const cloudinary = require("../config/cloudinary");
+
 const { generateToken } = require("../config/jwt");
-const admin = require("../config/firebase");
 
-const googleLogin = async (req, res) => {
-  try {
-    const { idToken } = req.body;
-    const decodedToken = admin.auth().verifyIdToken(idToken);
-    const { uid, email, name, picture } = decodedToken;
 
-    let user = User.findOne({ email });
-    if (user) {
-      if (!user.firebaseUid) {
-        user.firebaseUid = uid;
-        user.authProvider = "google.com";
-        user.profileImg = picture;
-        user.IsEmailVerified = true;
-      }
-      await user.save();
-    } else {
-      user = new User({
-        firebaseUid: uid,
-        email: email,
-        displayName: name,
-        photoURL: picture,
-        authProvider: "google.com",
-        isEmailVerified: true,
-      });
-      await user.save();
-    }
-
-    res.status(200).json({
-      message: "Login successful",
-      user: {
-        id: user._id,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        authProvider: user.authProvider,
-      },
-    });
-  } catch (err) {
-    res.status(500).json({ error: $`Authentication failed ${err}` });
-  }
-};
 const register = async (req, res) => {
   try {
-    const { username, email, password, profileImg } = req.body;
+    const { username, email, password, profileImg, role } = req.body;
 
     const checkEmail = await User.findOne({ email });
-    // if (checkEmail) {
-    //   res.status(400).json({ message: "Email already exists" });
-    //   return;
-    // }
+    if (checkEmail) {
+      return res.status(400).json({ message: "Email already exists" });;
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -64,17 +21,16 @@ const register = async (req, res) => {
       password: hashedPassword,
       profileImg,
       authProvider: "email",
+      role
     });
 
     if (user) {
       await user.save();
 
-      const session = await UserSession.create({
-        userId: user._id,
-      });
+
 
       const token = generateToken(
-        { userId: user._id, sessionId: session._id },
+        { userId: user._id },
         res,
       );
 
@@ -86,6 +42,7 @@ const register = async (req, res) => {
           email: user.email,
           profileImg: user.profileImg,
           authProvider: user.authProvider,
+          role: user.role
         },
         token: token,
       });
@@ -105,21 +62,24 @@ const login = async (req, res) => {
     const { username, password } = req.body;
 
     const findUser = await User.findOne({ username });
+
+    
     if (!findUser) {
       return res.status(400).json({ message: "User not found" });
     }
 
+    if (findUser.blockExpiresAt && findUser.blockExpiresAt > new Date()) {
+      return res.status(403).json({message: "Account is currently suspended"})
+    }
     const isPasswordMatch = await bcrypt.compare(password, findUser.password);
     if (!isPasswordMatch) {
       return res.status(400).json({ message: "Invalid password" });
     }
 
-    const session = await UserSession.create({
-      userId: findUser._id,
-    });
+
 
     const token = generateToken(
-      { userId: findUser._id, sessionId: session._id },
+      { userId: findUser._id },
       res,
     );
 
@@ -131,9 +91,10 @@ const login = async (req, res) => {
         email: findUser.email,
         profileImg: findUser.profileImg,
         authProvider: findUser.authProvider,
+        role: findUser.role,
       },
       token: token,
-      sessionId: session._id,
+     
     });
   } catch (e) {
     console.error("Login error:", e);
@@ -143,17 +104,6 @@ const login = async (req, res) => {
 
 const logout = async (req, res) => {
   try {
-    if (req.sessionId) {
-      const session = await UserSession.findById(req.sessionId)
-
-      if (session && !session.endedAt) {
-        session.endedAt = new Date()
-        session.duration = Math.floor(
-          (session.endedAt - session.startedAt) / 1000
-        );
-        await session.save()
-      }
-    }
     res.cookie("jwt", "", { maxAge: 0 });
     res.cookie("refreshToken", "", { maxAge: 0 });
     res.status(200).json({ message: "Logged out successfully" });
@@ -203,5 +153,5 @@ module.exports = {
   login,
   logout,
   refreshAccessToken,
-  googleLogin,
+  // googleLogin,
 };

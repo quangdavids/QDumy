@@ -1,7 +1,15 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { QuillEditor } from "@vueup/vue-quill";
+import { useAuthStore } from "../../stores/auth.store";
+import axios from "axios";
+
+const authStore = useAuthStore();
 const showMore = ref(false);
+const isLoading = ref(false);
+const successMessage = ref("");
+const error = ref("");
+const originalProfilePic = ref("");
 
 const toggleMore = () => {
   showMore.value = !showMore.value;
@@ -17,31 +25,70 @@ const lecturerInfo = ref({
   Xlink: "",
   personalLink: "",
 });
-const error = ref("")
-const imagePreview = ref("")
-const isReplacingImage = ref(false)
-const profilePic = ref(null)
 
+const imagePreview = ref("");
+const isReplacingImage = ref(false);
+const profilePic = ref(null);
+
+// Load lecturer data on mount
+onMounted(async () => {
+  try {
+    isLoading.value = true;
+    const userId = authStore.user?._id;
+    
+    if (!userId) {
+      error.value = "User not authenticated";
+      return;
+    }
+
+    const response = await axios.get(
+      `http://localhost:3000/api/lecturer-data/${userId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${authStore.token}`,
+        },
+      }
+    );
+
+    if (response.data.lecturer) {
+      const lecturer = response.data.lecturer;
+      lecturerInfo.value = {
+        fullName: lecturer.lecturerName || "",
+        email: lecturer.email || "",
+        jobTitle: lecturer.jobTitle || "Instructor at QDumy",
+        description: lecturer.biography || "",
+        facebook: lecturer.socialLinks?.facebook || "",
+        linkedIn: lecturer.socialLinks?.linkedin || "",
+        Xlink: lecturer.socialLinks?.twitter || "",
+        personalLink: lecturer.socialLinks?.link || "",
+      };
+      originalProfilePic.value = lecturer.profilePic || "";
+      imagePreview.value = lecturer.profilePic || "";
+    }
+  } catch (err) {
+    console.error("Failed to load lecturer data:", err);
+    error.value = "Failed to load profile data";
+  } finally {
+    isLoading.value = false;
+  }
+});
 
 const handleFileChange = (event) => {
   const file = event.target.files[0];
   if (file) {
     // Validate file type
-    if (!file.type.includes('image/')) {
-      error.value = 'Please upload a image file';
+    if (!file.type.includes("image/")) {
+      error.value = "Please upload an image file";
       return;
     }
-    // Validate file size (max 100MB)
+    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      error.value = 'Image must be less than 5MB';
+      error.value = "Image must be less than 5MB";
       return;
     }
     profilePic.value = file;
     error.value = "";
     isReplacingImage.value = true;
-
-    // Always reset both previews so only the latest is shown
-    imagePreview.value = null;
 
     // Create preview
     const reader = new FileReader();
@@ -52,19 +99,72 @@ const handleFileChange = (event) => {
   }
 };
 
+const removeProfilePic = () => {
+  profilePic.value = null;
+  imagePreview.value = originalProfilePic.value;
+  isReplacingImage.value = false;
+};
+
 const editLecturerInfo = async () => {
   try {
-    const formData = new FormData()
+    error.value = "";
+    successMessage.value = "";
+    isLoading.value = true;
 
-    formData.append("fullName", lecturerInfo.value.fullName)
-    formData.append("email", lecturerInfo.value.email)
-    formData.append("jobTitle", lecturerInfo.value.jobTitle)
-    formData.append("description", lecturerInfo.value.description)
-    
+    const userId = authStore.user?._id;
+    if (!userId) {
+      error.value = "User not authenticated";
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("lecturerName", lecturerInfo.value.fullName);
+    formData.append("email", lecturerInfo.value.email);
+    formData.append("jobTitle", lecturerInfo.value.jobTitle);
+    formData.append("biography", lecturerInfo.value.description);
+    formData.append("facebook", lecturerInfo.value.facebook);
+    formData.append("linkedin", lecturerInfo.value.linkedIn);
+    formData.append("twitter", lecturerInfo.value.Xlink);
+    formData.append("personalLink", lecturerInfo.value.personalLink);
+
+    if (profilePic.value) {
+      formData.append("profilePic", profilePic.value);
+    }
+
+    const response = await axios.put(
+      `http://localhost:3000/lecturer/${userId}`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${authStore.token}`,
+        },
+      }
+    );
+
+    if (response.data) {
+      successMessage.value = "Profile updated successfully!";
+      profilePic.value = null;
+      isReplacingImage.value = false;
+      
+      // Refresh the original profile pic
+      if (response.data.lecturer?.profilePic) {
+        originalProfilePic.value = response.data.lecturer.profilePic;
+      }
+
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        successMessage.value = "";
+      }, 3000);
+    }
   } catch (err) {
-    console.log(err)
+    console.error("Failed to update profile:", err);
+    error.value =
+      err.response?.data?.message || "Failed to update profile. Please try again.";
+  } finally {
+    isLoading.value = false;
   }
-}
+};
 </script>
 
 <template>
@@ -74,6 +174,16 @@ const editLecturerInfo = async () => {
       <p class="text-gray-500 font-semibold mt-2">Update your personal info</p>
     </div>
 
+    <!-- Success Message -->
+    <div v-if="successMessage" class="ml-4 mb-4 p-3 bg-green-100 text-green-700 rounded-lg">
+      {{ successMessage }}
+    </div>
+
+    <!-- Error Message -->
+    <div v-if="error" class="ml-4 mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
+      {{ error }}
+    </div>
+
     <div class="max-w-full p-4 rounded-lg ml-4 outline-1 outline-gray-300">
       <div class="font-bold p-2 text-lg">Personal Information</div>
 
@@ -81,7 +191,7 @@ const editLecturerInfo = async () => {
         <div class="w-full p-2 rounded-lg gap-3 flex items-center">
           <div class="p-3">
             <img
-              :src="imagePreview"
+              :src="imagePreview || 'https://media.istockphoto.com/id/469962702/photo/blonde-teacher-smiling-in-front-of-blurred-class-background.jpg?s=612x612&w=0&k=20&c=ZyXhvpHtlRnuecENnacaHgu4pOuE-Zg-U_LftX0P1CU='"
               class="w-25 h-25 rounded-full"
             />
           </div>
@@ -92,7 +202,6 @@ const editLecturerInfo = async () => {
             </p>
           </div>
         </div>
-        {{ error }}
         <div class="max-w-full flex gap-2">
           <input
             id="profilePicInput"
@@ -100,7 +209,7 @@ const editLecturerInfo = async () => {
             @change="handleFileChange"
             accept="image/*"
             type="file"
-            >
+          />
           <label
             for="profilePicInput"
             class="bg-green-500 font-semibold p-3 w-full rounded-lg text-white cursor-pointer text-center"
@@ -108,6 +217,7 @@ const editLecturerInfo = async () => {
             Change Photo
           </label>
           <button
+            @click="removeProfilePic"
             class="bg-gray-50 font-semibold p-3 w-full cursor-pointer rounded-lg outline-1 outline-gray-300"
           >
             Remove
@@ -128,16 +238,18 @@ const editLecturerInfo = async () => {
         <div class="flex flex-col gap-2">
           <label for="email" class="font-bold"> Email Address</label>
           <input
-            type="text"
+            type="email"
+            v-model="lecturerInfo.email"
             class="outline-1 rounded-lg outline-gray-300 p-2 bg-gray-100"
           />
         </div>
       </div>
 
       <div class="flex flex-col gap-2 w-full mt-2">
-        <label for="Job title" class="font-bold"> Job Title</label>
+        <label for="jobTitle" class="font-bold"> Job Title</label>
         <input
           type="text"
+          v-model="lecturerInfo.jobTitle"
           class="outline-1 rounded-lg outline-gray-300 p-2 bg-gray-100"
         />
       </div>
@@ -167,6 +279,7 @@ const editLecturerInfo = async () => {
           <input
             type="text"
             v-model="lecturerInfo.facebook"
+            placeholder="Facebook profile URL"
             class="outline-1 outline-gray-200 rounded-lg hover:outline-gray-400 w-full py-2 px-2"
           />
         </div>
@@ -177,7 +290,8 @@ const editLecturerInfo = async () => {
           <i class="fa-brands fa-linkedin text-[30px] text-blue-700"></i>
           <input
             type="text"
-             v-model="lecturerInfo.linkedIn"
+            v-model="lecturerInfo.linkedIn"
+            placeholder="LinkedIn profile URL"
             class="outline-1 outline-gray-200 rounded-lg hover:outline-gray-400 w-full py-2 px-2"
           />
         </div>
@@ -188,7 +302,8 @@ const editLecturerInfo = async () => {
           <i class="fa-brands fa-x-twitter text-[30px]"></i>
           <input
             type="text"
-             v-model="lecturerInfo.Xlink"
+            v-model="lecturerInfo.Xlink"
+            placeholder="Twitter profile URL"
             class="outline-1 outline-gray-200 rounded-lg hover:outline-gray-400 w-full py-2 px-2"
           />
         </div>
@@ -199,47 +314,22 @@ const editLecturerInfo = async () => {
           <i class="fa-solid fa-link text-[30px] text-green-600"></i>
           <input
             type="text"
-             v-model="lecturerInfo.personalLink"
+            v-model="lecturerInfo.personalLink"
+            placeholder="Personal website URL"
             class="outline-1 outline-gray-200 rounded-lg hover:outline-gray-400 w-full py-2 px-2"
           />
-        </div>
-      </div>
-
-      <div
-        class="p-4 rounded-lg w-full h-auto flex flex-col gap-2 ml-4 outline-1 outline-gray-300 mt-7"
-      >
-        <div class="flex justify-between items-center">
-          <div class="text-lg font-bold">Qualifications & Certifications</div>
-          <div
-            class="text-sm hover:text-green-400 cursor-pointer text-gray-400 font-semibold"
-          >
-            Add new
-          </div>
-        </div>
-
-        <div
-          class="p-3 w-full mt-2 bg-gray-100 rounded-lg flex items-center gap-4 outline-1 outline-gray-200"
-        >
-          <div class="p-3 rounded-lg bg-green-200">
-            <i class="fa fa-graduation-cap text-[20px] text-green-700"></i>
-          </div>
-
-          <div class="flex flex-col">
-            <div class="font-bold text-sm">Oh where do we begin</div>
-            <div class="font-semibold text-gray-400 text-sm tracking-wide">
-              Greenwich Uni 2022-2026
-            </div>
-          </div>
         </div>
       </div>
     </div>
 
     <div class="flex justify-end p-3">
       <button
-        class="px-5 py-3 flex gap-4 items-center hover:border-green-500 hover:text-green-500 hover:bg-white hover:border-1 cursor-pointer duration-300 rounded-lg bg-green-500 shadow-md text-white"
+        @click="editLecturerInfo"
+        :disabled="isLoading"
+        class="px-5 py-3 flex gap-4 items-center hover:border-green-500 hover:text-green-500 hover:bg-white hover:border-1 cursor-pointer duration-300 rounded-lg bg-green-500 shadow-md text-white disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <i class="fa fa-save"></i>
-        Save Changes
+        <i :class="isLoading ? 'fa fa-spinner fa-spin' : 'fa fa-save'"></i>
+        {{ isLoading ? "Saving..." : "Save Changes" }}
       </button>
     </div>
   </div>

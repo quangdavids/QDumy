@@ -3,8 +3,8 @@ const { Schema } = mongoose;
 
 const courseSchema = mongoose.Schema(
   {
-    title: {type: String},
-    introduction: {type: String},
+    title: { type: String },
+    introduction: { type: String },
     lecturerId: { type: Schema.Types.ObjectId, ref: "Lecturer" },
     // ownedByLecturer: { type: Schema.Types.ObjectId, ref: "Lecturer"},
     courseImage: { type: String },
@@ -18,12 +18,22 @@ const courseSchema = mongoose.Schema(
         ref: "Lesson",
       },
     ],
-    description: {type: String},
-    categories: { type: String },
+    rating: { type: Number, default: 0},
+    description: { type: String },
+    category: { type: String },
     level: { type: String },
     review: [{ type: Schema.Types.ObjectId, ref: "Review" }],
-    status: { type: String, enum: ["ongoing", "completed"] },
+    quizzes: [{type: Schema.Types.ObjectId, ref: "Quiz"}],
     studentsEnrol: { type: Number, default: 0 },
+    status: {
+      type: String,
+      enum: ["draft","pending", "published", "rejected"],
+      default: "draft",
+    },
+
+    // isPublished: { type: Boolean, default: false },
+
+    studentsEnrolled: [{ type: Schema.Types.ObjectId, ref: "User"}],
   },
   { timestamps: true }
 );

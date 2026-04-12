@@ -1,7 +1,7 @@
 <script setup>
 import Banner from "../../components/Banner.vue";
 import CourseCard from "../../components/CourseCard.vue";
-import Navbar from "../../components/Navbar.vue";
+import Navbar from "../../components/NavBar.vue";
 import Footer from "../../components/Footer.vue";
 import { register } from "swiper/element/bundle";
 import { Swiper, SwiperSlide } from "swiper/vue";
@@ -45,7 +45,28 @@ const handleNavigation = function (id) {
 </script>
 
 <template>
-  <Banner />
+  <div class="bg-black z-0 ">
+ <div class="relative  max-w-auto max-h-300 flex container w-full text-white mx-auto">
+  <div class=" md:w-1/2   flex sm:w-screen flex-col gap-5 justify-center mb-4 p-3 mx-auto">
+    <h1 class="text-[60px] font-bold"> QuangStudy</h1>
+    <p class="text-4xl "> The Best Place For The Best <span class="underline text-green-400">Career</span>.</p>
+    <p class="text-lg">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quis placerat arcu nibh sed placerat elementum. Urna eu et purus et mi sit rhoncus. Id nisl quis arcu nulla.</p>
+    <div>
+      <RouterLink to="/course/search">
+    <button class="bg-green-500 p-5 font-semibold border-black text-xl w-auto cursor-pointer
+    hover:bg-white hover:text-green-500 hover:p-5
+     hover:border-green-500  transition duration-300  rounded-full"> Get a Course now!</button>
+    </RouterLink>
+    </div>
+
+
+  </div>
+  <div class="mx-auto">
+  <img src="/images/students/banner-img.png" class="w-full  hidden h-200 mt-18 lg:block md:block p-3  object-cover " />
+  </div>
+  
+</div>
+</div>
 
   <!-- University Logos -->
    <div class="scroll-smooth">
@@ -402,7 +423,7 @@ const handleNavigation = function (id) {
           class="flex flex-col gap-3 p-3 border-3 border-gray-200 hover:border-green-500 transition durarion-300 rounded-xl"
         >
           <div class="max-w-85 p-2">
-            <img src="/images/instructors/blonde1.jpeg " class="rounded-xl" />
+            <img src="/images/teacher.jpg " class="rounded-xl" />
           </div>
           <div class="flex flex-col justify-center items-center">
             <p class="text-[26px] font-semibold">Laura Mortensen
@@ -439,7 +460,7 @@ const handleNavigation = function (id) {
           class="flex flex-col gap-2 p-3 border-3 border-gray-200 hover:border-green-500 transition durarion-300 rounded-xl"
         >
           <div class="max-w-85 p-2">
-            <img src="/images/instructors/blonde2.jpeg " class="rounded-xl" />
+            <img src="/images/teacher2.jpg " class="rounded-xl" />
           </div>
           <div class="flex flex-col justify-center items-center">
             <p class="text-[26px] font-semibold">Milan Jurasek
@@ -476,7 +497,7 @@ const handleNavigation = function (id) {
           class="flex flex-col gap-2 p-3 border-3 border-gray-200 hover:border-green-500 transition durarion-300 rounded-xl"
         >
           <div class="max-w-85 p-2">
-            <img src="/images/instructors/blonde3.jfif " class="rounded-xl" />
+            <img src="/images/teacher3.jpg " class="rounded-xl" />
           </div>
           <div class="flex flex-col justify-center items-center">
             <p class="text-[26px] font-semibold"> Amila Piotrowska
