@@ -1,9 +1,15 @@
 <script setup>
-import { RouterView, RouterLink, useRoute } from 'vue-router';
-
+import { RouterView, RouterLink, useRoute, useRouter } from 'vue-router';
+import { useAuthStore } from "../stores/auth.store";
+import { storeToRefs } from 'pinia';
 const route = useRoute()
+const router = useRouter()
 const isActiveRoute = (path) => route.path === path;
-
+const authStore = useAuthStore()
+const logout = async () => {
+  await authStore.logout()
+  router.push('/login')
+}
 </script>
 
 <template>
@@ -50,6 +56,15 @@ const isActiveRoute = (path) => route.path === path;
           <p class="text-sm font-semibold">Users Directory</p>
         </div>
         </RouterLink>
+
+        <div
+          @click="logout"
+          class= "`flex  items-center cursor-pointer text-red-500 gap-4  ml-1 px-3 py-2 hover:bg-green-200 hover:text-green-600 rounded-lg duration-300 cursor-pointer`"
+        >
+          
+          <div class="text-sm font-semibold flex gap-4">
+            <i class="fa-solid fa-door-open text-xl"></i>Logout</div>
+        </div>
       </div>
     </aside>
 

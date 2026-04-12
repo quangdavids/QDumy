@@ -3,10 +3,12 @@ const Course = require("../model/courseSchema");
 const Lecturer = require("../model/lecturerSchema");
 const User = require("../model/userSchema");
 const Review = require("../model/reviewSchema");
+const CourseCompletion = require("../model/courseCompletionSchema");
 const multer = require("multer");
 const cloudinary = require("../config/cloudinary");
 const fs = require("fs");
 const mongoose = require("mongoose");
+const lecturerSchema = require("../model/lecturerSchema");
 // const uploadToCloudinary = () => {
 
 // }
@@ -21,7 +23,11 @@ const addCourse = async (req, res) => {
       price,
       description,
       level,
+      category,
     } = req.body;
+
+    // // Find the Lecturer document associated with this User ID
+    let lecturer = await Lecturer.findOne({ _id: lecturerId });
 
     let courseImageUrl = "";
     let promotionalVideoUrl = "";
@@ -34,7 +40,7 @@ const addCourse = async (req, res) => {
           {
             folder: "course_thumbnails",
             resource_type: "image",
-          }
+          },
         );
         courseImageUrl = imageUploadResult.secure_url;
 
@@ -59,12 +65,13 @@ const addCourse = async (req, res) => {
             chunk_size: 6000000,
             eager: [{ format: "mp4", quality: "auto" }],
             eager_async: true,
-          }
+          },
         );
         promotionalVideoUrl = videoUploadResult.secure_url;
+        fs.unlinkSync(videoFile.path);
       } catch (uploadError) {
         console.error("Cloudinary Upload Error", uploadError);
-        return res.status(400).json({ message: "Failed to upload video" });
+        return res.status(400).json({ message: "Failed to upload video", error: uploadError });
       }
     }
 
@@ -81,8 +88,8 @@ const addCourse = async (req, res) => {
       description,
       review: [],
       level: level,
-      status: 'pending',
-      isPublished
+      status: "draft",
+      category: category,
     });
 
     const course = await Course.findById(newCourse._id);
@@ -90,10 +97,10 @@ const addCourse = async (req, res) => {
     //     {path: "ownedByLecturer", select: "lecturerName" },
     // ])
 
-    const lecturer = await Lecturer.findOne({ lecturerId: lecturerId });
-
+    // Add course to lecturer's ownedCourses
     lecturer.ownedCourses.push(course);
     await lecturer.save();
+
     res.status(201).json(course);
   } catch (err) {
     res
@@ -102,11 +109,33 @@ const addCourse = async (req, res) => {
   }
 };
 
+const submitCourseForApproval = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const findCourse = await Course.findByIdAndUpdate(
+      courseId,
+      { status: "pending" },
+      { new: true },
+    );
+
+    res
+      .status(200)
+      .json({
+        message: "Couse submitted succesfully",
+        course: findCourse.status,
+      });
+  } catch (e) {
+    res
+      .status(500)
+      .json({ message: "Error in course submission", err: e.message });
+  }
+};
+
 const getAllCourses = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const skip = parseInt(req.query.skip) || 6;
-    const limit = (page - 1) * limit;
+    const limit = (page - 1) * skip;
     const courses = await Course.find()
       .populate([
         "lecturerId",
@@ -136,7 +165,9 @@ const getAllCourses = async (req, res) => {
 
 const getLatestCourses = async (req, res) => {
   try {
-    const latestCourses = await Course.find().sort({ createdAt: -1 }).limit(5);
+    const latestCourses = await Course.find({ status: "published" })
+      .sort({ createdAt: -1 })
+      .limit(5);
     // .populate("ownedByLecturer")
 
     res.status(200).json({
@@ -155,7 +186,7 @@ const getCourseById = async (req, res) => {
     const courseId = req.params.id;
     const course = await Course.findById(courseId).populate([
       { path: "lessons" },
-      { path: "lecturerId", model: "Lecturer", select: "username" },
+      { path: "lecturerId", select: "lecturerName profilePic ownedCourses" },
     ]);
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
@@ -180,6 +211,7 @@ const updateCourse = async (req, res) => {
       learningQualities,
       price,
       level,
+      category,
     } = req.body;
 
     const course = await Course.findById(courseId);
@@ -196,6 +228,7 @@ const updateCourse = async (req, res) => {
       learningQualities,
       price,
       level,
+      category,
     };
 
     if (req.files && req.files.courseImage) {
@@ -206,7 +239,7 @@ const updateCourse = async (req, res) => {
           {
             folder: "course_thumbnails",
             resource_type: "image",
-          }
+          },
         );
         courseData.courseImage = imageUploadResult.secure_url;
         fs.unlinkSync(imageFile.path);
@@ -227,11 +260,11 @@ const updateCourse = async (req, res) => {
           {
             folder: "course_promotional_videos",
             resource_type: "video",
-            allowed_formats: ["mp4", "mov", "avi"],
+            allowed_formats: ["mp4", "mov", "avi", "webm"],
             chunk_size: 6000000,
             eager: [{ format: "mp4", quality: "auto" }],
             eager_async: true,
-          }
+          },
         );
         courseData.promotionalVideo = videoUploadResult.secure_url;
         fs.unlinkSync(videoFile.path);
@@ -304,7 +337,7 @@ const getCoursesByLecturer = async (req, res) => {
 
 const searchCourse = async (req, res) => {
   try {
-    const { query, categories, level, priceType, minPrice, maxPrice } =
+    const { query, categories, level, priceType, minPrice, maxPrice, rating } =
       req.query;
     // if (!query) {
     //     res.status(400).json({ message: "Search query not found" });
@@ -327,9 +360,21 @@ const searchCourse = async (req, res) => {
     }
 
     if (priceType == "Paid") {
-      search.price = {...search.price, $gt: 0}
+      search.price = { ...search.price, $gt: 0 };
     }
 
+    if (rating == "over_3.5") {
+      search.rating = { ...search.rating, $gt: 3.5}
+    }
+
+    if (rating == "over_4") {
+      search.rating = { ...search.rating, $gt: 4}
+    }
+
+    if (rating == "over_4.5") {
+      search.rating = { ...search.rating, $gt: 4.5}
+    }
+    
     if (level) {
       const cats = Array.isArray(level) ? level : [level];
       search.level = { $in: cats };
@@ -370,20 +415,144 @@ const searchCourse = async (req, res) => {
   }
 };
 
+
+
+const searchOwnedCourse = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { courseQuery } = req.query;
+
+    const user = await User.findById(userId).populate({
+      path: "enrolledCourses",
+      select: "courseImage title price lecturerId",
+      populate: {
+        path: "lecturerId",
+        select: "lecturerName",
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const courseIds = user.enrolledCourses.map((course) => course._id);
+
+    const completionData = await CourseCompletion.find({
+      userId: userId,
+      courseId: { $in: courseIds },
+    });
+
+    // Create a map of courseId to progressPercent
+    const progressMap = {};
+    completionData.forEach((completion) => {
+      progressMap[completion.courseId] = completion.progressPercent || 0;
+    });
+
+    // Add progressPercent to each course
+    const coursesWithProgress = user.enrolledCourses.map((course) => ({
+      ...(course.toObject ? course.toObject() : course),
+      progressPercent: progressMap[course._id] || 0,
+    }));
+
+    let filteredCourses = coursesWithProgress;
+    if (courseQuery) {
+      filteredCourses = coursesWithProgress.filter((course) =>
+        course.title.toLowerCase().includes(courseQuery.toLowerCase()),
+      );
+    }
+
+    res
+      .status(200)
+      .json({
+        message: "Courses fetched successfully",
+        courses: filteredCourses,
+        progressMap: progressMap,
+      });
+  } catch (err) {
+    console.log(err);
+    res.status(404).json({ message: "Search query error", err: err.message });
+  }
+};
+
+const getLessonDetails = async (req, res) => {
+  try {
+    const { lessonId, userId } = req.params;
+    const lesson = await Lesson.findById(lessonId);
+
+    if (!lesson) {
+      return res.status(404).json({ message: "Lesson not found" });
+    }
+
+    // Verify user has access to this course if userId is provided
+    if (userId) {
+      const student = await User.findById(userId).populate({
+        path: "enrolledCourses",
+        select: "_id",
+      });
+      
+      if (!student) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const isCourseEnrolled = student.enrolledCourses.some((enrolledCourse) =>
+        enrolledCourse._id.equals(lesson.courseId),
+      );
+
+      if (!isCourseEnrolled) {
+        return res.status(403).json({ 
+          message: "Access denied: You must purchase this course to view lessons" 
+        });
+      }
+    }
+
+    res
+      .status(200)
+      .json({
+        message: "Successful fetching lesson's details",
+        lesson: lesson,
+      });
+  } catch (err) {
+    res
+      .status(400)
+      .json({ message: "Error in getting lesson details", err: err.message });
+  }
+};
 const getCourseLessons = async (req, res) => {
   try {
-    const { courseId } = req.params;
+    const { courseId, userId } = req.params;
+    
     if (!mongoose.Types.ObjectId.isValid(courseId)) {
       return res.status(400).json({ message: "Invalid courseId format" });
     }
 
-    const lessonsList = await Lesson.find({ courseId });
+    // Verify user has access to this course
+    // if (userId) {
+    //   const student = await User.findById(userId).populate({
+    //     path: "enrolledCourses",
+    //     select: "_id",
+    //   });
+      
+    //   if (!student) {
+    //     return res.status(404).json({ message: "User not found" });
+    //   }
+
+    //   const isCourseEnrolled = student.enrolledCourses.some((enrolledCourse) =>
+    //     enrolledCourse._id.equals(courseId),
+    //   );
+
+    //   if (!isCourseEnrolled) {
+    //     return res.status(403).json({ 
+    //       message: "Access denied: You must purchase this course to view lessons" 
+    //     });
+    //   }
+    // }
+
+    const lessonsList = await Lesson.find({ courseId: courseId });
 
     res
       .status(200)
-      .json({ message: "Successful fetching lesssons", lessonsList });
+      .json({ message: "Successful fetching lessons", lessonsList });
   } catch (e) {
-    console.log(e);
     res.status(400).json(e);
   }
 };
@@ -410,7 +579,7 @@ const addLessonToCourse = async (req, res) => {
         const result = await cloudinary.uploader.upload(req.file.path, {
           resource_type: "video",
           folder: "course-videos",
-          allowed_formats: ["mp4", "mov", "avi"],
+          allowed_formats: ["mp4", "mov", "avi", "webm"],
           chunk_size: 6000000,
           eager: [{ format: "mp4", quality: "auto" }],
           eager_async: true,
@@ -525,7 +694,7 @@ const updateLessonInCourse = async (req, res) => {
         ...(content && { content }),
         ...videoData,
       },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     res.status(200).json({
@@ -541,60 +710,51 @@ const updateLessonInCourse = async (req, res) => {
   }
 };
 
-// const deleteLessonInCourse = async (req,res) => {
 
-// }
 
-const searchLesson = async (req, res) => {
-  try {
-    const query = req.query;
 
-    const lesson = await Lesson.find({
-      title: { $regex: query, $option: "i" },
-    });
-    res
-      .status(200)
-      .json({ message: "Course found successfully", lessonTitle: lesson });
-  } catch (err) {
-    res.status(404).json({ message: "Course not found", error: err });
-  }
-};
 
-const getLatestReviews = async (req, res) => {
-  try {
-    const { courseId } = req.params;
-    const reviews = await Review.find({ courseId: courseId })
-      .populate({ path: "userId", select: "username profileImg" })
-      .limit(2)
-      .sort({ createdAt: -1 });
-    res
-      .status(200)
-      .json({ message: "Fetched reviews successfully", reviews: reviews });
-  } catch (err) {
-    res.status(404).json({ message: "Reviews not found", error: err });
-  }
-};
-
-const getEnrolledCourses = async (req,res) => {
+const getEnrolledCourses = async (req, res) => {
   try {
     const { userId } = req.params;
-    const ownedCourses = await User.findById(userId).populate({
+    const user = await User.findById(userId).populate({
       path: "enrolledCourses",
       select: "courseImage title price lecturerId",
       populate: {
         path: "lecturerId",
-        select: "lecturerName"
-      }
-    })
+        select: "lecturerName",
+      },
+    });
 
-    res.status(200).json({ message: "Fetched courses successfully", 
-      ownedCourses: ownedCourses.enrolledCourses,
-     })
+    const courseIds = user.enrolledCourses.map((course) => course._id);
+
+    const completionData = await CourseCompletion.find({
+      userId: userId,
+      courseId: { $in: courseIds },
+    });
+
+    // Create a map of courseId to progressPercent
+    const progressMap = {};
+    completionData.forEach((completion) => {
+      progressMap[completion.courseId] = completion.progressPercent || 0;
+    });
+
+    // Add progressPercent to each course
+    const coursesWithProgress = user.enrolledCourses.map((course) => ({
+      ...(course.toObject ? course.toObject() : course),
+      progressPercent: progressMap[course._id] || 0,
+    }));
+
+    res
+      .status(200)
+      .json({
+        message: "Fetched courses successfully",
+        ownedCourses: coursesWithProgress,
+      });
   } catch (err) {
-     res.status(404).json({ message: "User courses not found", error: err });
+    res.status(404).json({ message: "User courses not found", error: err });
   }
-}
-
+};
 
 const checkCourseBoughtStatus = async (req, res) => {
   try {
@@ -603,33 +763,74 @@ const checkCourseBoughtStatus = async (req, res) => {
       path: "enrolledCourses",
       select: "_id",
     });
-    const course = await Course.findById(courseId);
+    const course = await Course.findOne({ _id: courseId });
     if (!student || !course) {
       return res.status(404).json({ message: "Student or course not found" });
     }
 
-    for (let i = 0; i < student.enrolledCourses.length; i++) {
-      if (student.enrolledCourses[i]._id.equals(course._id)) {
-       return res.status(200).json({
-          message: "Found course",
-          course: course._id,
-          length: student.enrolledCourses.length,
-        });
-        
-      } else  {
-        return res.status(404).json({ message: "Course not found" });
-      }
-    }
+    const isCourseEnrolled = student.enrolledCourses.some((enrolledCourse) =>
+      enrolledCourse._id.equals(course._id),
+    );
 
-    // res.status(200).json({student: student.enrolledCourses[2]._id, course: course._id});
+    if (isCourseEnrolled) {
+      return res.status(200).json({
+        message: "Course access granted",
+        course: course._id,
+        length: student.enrolledCourses.length,
+        status: isCourseEnrolled
+      });
+    } else {
+      return res.status(403).json({ 
+        message: "Access denied: Course not purchased", 
+        status: isCourseEnrolled 
+      });
+    }
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
+
+const getTotalLessonDuration = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+
+    const getTotalLessons = await Lesson.find({courseId: courseId})
+
+    const getTotalDuration = await Lesson.aggregate([
+      {
+        $match: { courseId: new mongoose.Types.ObjectId(courseId) },
+      },
+      {
+        $group: {
+          _id: `$courseId`,
+          totalTime: { $sum: `$duration`  },
+        },
+      },
+    ]);
+    res
+      .status(200)
+      .json({
+        message: "Successfully get total lesson duration",
+        totalTime: getTotalDuration[0].totalTime,
+        totalLessons: getTotalLessons
+      });
+  } catch (err) {
+    res
+      .status(500)
+      .json({
+        message: "Failed to get total lesson duration",
+        err: err.message,
+      });
+  }
+};
+
+
 module.exports = {
   addCourse,
   getAllCourses,
+  submitCourseForApproval,
   getLatestCourses,
+  getLessonDetails,
   getCourseById,
   updateCourse,
   deleteCourse,
@@ -639,7 +840,8 @@ module.exports = {
   addLessonToCourse,
   updateLessonInCourse,
   getCourseLessons,
-  getLatestReviews,
-  searchLesson,
-  getEnrolledCourses
+  searchOwnedCourse,
+  getEnrolledCourses,
+  getTotalLessonDuration,
+  
 };

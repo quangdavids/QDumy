@@ -69,6 +69,15 @@ const deleteReview = async (req, res) => {
   }
 };
 
+const getUserReview = async (req,res) => {
+  try {
+  const { courseId, userId } = req.params
+  const review = await Review.findOne({courseId: courseId, userId: userId}).populate("userId","profileImg username")
+  res.status(200).json(review)
+  } catch (err) {
+    res.status(400).json({message:"Can't fetch a user review", err: err.message})
+  }
+}
 const getReviewsByCourse = async (req, res) => {
   try {
     const { courseId } = req.params;
@@ -86,4 +95,4 @@ const getReviewsByCourse = async (req, res) => {
   }
 };
 
-module.exports = { addReviewToCourse, editReview, deleteReview, getReviewsByCourse}
+module.exports = { addReviewToCourse, editReview, deleteReview, getReviewsByCourse, getUserReview}

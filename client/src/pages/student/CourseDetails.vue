@@ -91,7 +91,7 @@ const overviews = ref([
   { section: "Curriculum" },
   { section: "Instructor" },
   { section: "Reviews" },
-  { section: "Quiz" },
+
 ]);
 
 const overviewClicked = function (index) {
@@ -130,6 +130,19 @@ const addReview = async () => {
     getLatestReviews()
   } catch (e) {
     console.log(e)
+  }
+}
+
+const userReview = ref("")
+const isEditReview = ref(false)
+const getUserReview = async () => {
+  try {
+    const response = await axios.get(`http://localhost:3000/api/review/${courseId}/${user.value._id}`)
+    userReview.value = response.data
+    console.log(userReview.value)
+    
+  } catch (err) {
+    console.log(err)
   }
 }
 
@@ -192,6 +205,7 @@ onMounted(() => {
   getLatestReviews();
   checkCourseBoughtStatus();
   getTotalTime();
+  getUserReview()
   cartStore.fetchCourses();
 });
 console.log(courses.value)
@@ -217,7 +231,7 @@ console.log(courses.value)
             </div>
 
             <div class="mt-5">
-              {{ course.rating }} <i class="fa-solid fa-star text-sm text-yellow-500"></i>
+              {{ course.rating?.toFixed(2) }} <i class="fa-solid fa-star text-sm text-yellow-500"></i>
             </div>
 
             <div class="mt-5">
@@ -368,10 +382,7 @@ console.log(courses.value)
             <div class="mt-3">
               <p class="text-[23px] font-bold">About Instructor</p>
               <div class="mt-2">
-                Lorem ipsum dolor, sit amet consectetur adipisicing elit. Sed,
-                quam voluptatum possimus quas mollitia aliquam in voluptatem
-                ullam repellat numquam totam accusantium sapiente animi eos
-                dolore enim quidem ab porro!
+                {{ lecturer.biography }}
               </div>
             </div>
           </div>
@@ -380,7 +391,9 @@ console.log(courses.value)
             class="mt-7 flex flex-col max-h-full gap-2"
             v-if="active === 'Reviews'"
           >
+
             <div v-if="latestReviews" class="flex flex-col gap-2">
+            
               <div
                 v-for="review in latestReviews"
                 :key="review._id"
@@ -407,11 +420,53 @@ console.log(courses.value)
                     </span>
                    
                   </div>
-                  <div class="text-[12px] line-clamp-4">
+                  <div class="text-[16px] line-clamp-4">
                     {{ review.content }}
                   </div>
                 </div>
               </div>
+
+              <div class="font-semibold text-lg">
+                Your Review
+              </div>
+                <div 
+                class="rounded-lg gap-5 bg-gray-50 flex-grow justify-between flex p-2"
+              >
+              <div class="flex gap-4">
+                <div class="max-w-15">
+                  <img :src="userReview.userId.profileImg" class="rounded-full" />
+                </div>
+
+                <div class="flex flex-col gap-2">
+                  <div class="flex w-full justify-between ">
+                  <div class="text-[18px] font-semibold">
+                    {{ userReview.userId.username }}
+                  </div>
+                  
+                  </div>
+                   <span class="text-gray-500 text-[13px]"> {{ dayjs(userReview.createdAt).format("MMMM D, YYYY") }} </span>
+                  <div class="flex gap-3 items-center">
+                    <span>
+                      <i
+                        v-for="star in Array.from({length: userReview.rating})"
+                        :key="star"
+                        class="fa-star fas filled text-yellow-500"
+                      ></i>
+
+             
+                    </span>
+                   
+                  </div>
+                  <div class="text-[16px] line-clamp-4">
+                    {{ userReview.content }}
+                  </div>
+                </div>
+              </div>
+              <div class="flex gap-3">
+                    <!-- <i class="fa fa-pen text-lg cursor-pointer hover:text-blue-500"></i>
+                    <i class="fa fa-trash text-lg cursor-pointer hover:text-red-500"></i> -->
+                  </div>
+                </div>
             </div>
 
             <div v-else>
