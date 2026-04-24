@@ -8,7 +8,7 @@ const route = useRoute();
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
 
-import Navbar from './components/NavBar.vue'
+import Navbar from './components/Navbar.vue'
 import Footer from './components/Footer.vue';
 
 import { RouterView } from 'vue-router';
@@ -34,7 +34,7 @@ const openChatbot = function () {
 </script>
 
 <template>
-  <NavBar v-if="!route.meta.hideNavbar" />
+  <Navbar v-if="!route.meta.hideNavbar" />
 
   <RouterView></RouterView>
 

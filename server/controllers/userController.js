@@ -188,7 +188,6 @@ const getAllUsers = async (req, res) => {
 module.exports = {
   getNumberOfUsers,
   getUserProfile,
-
   editUserProfile,
   getUserAnalytics,
   getCompletedAndRemaining,
