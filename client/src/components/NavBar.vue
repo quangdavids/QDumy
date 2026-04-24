@@ -1,7 +1,7 @@
 <script setup>
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/vue";
 import { RouterLink, useRouter, useRoute } from "vue-router";
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, onUpdated, watch } from "vue";
 import { useAuthStore } from "../stores/auth.store";
 import { useCartStore } from "../stores/cart.store";
 import { useNotificationStore } from "../stores/notification.store";
@@ -19,7 +19,7 @@ let results = ref([]);
 const router = useRouter();
 let menuOpen = ref(false);
 const isMobileMenuOpen = ref(false);
-
+const apiUrl = import.meta.env.VITE_API_URL;
 const cartCount = computed(() => cartCourses.value?.length || 0);
 const unread = computed(() => unreadCount.value || 0);
 const signOut = async function () {
@@ -41,6 +41,12 @@ const handleSearch = async (e) => {
         query: { query: searchQuery.value },
       });
       isMobileMenuOpen.value = false;
+    } else  {
+        await router.push({
+        path: "/course/search",
+        query: {query: searchQuery.value}
+      });
+      isMobileMenuOpen.value = false;
     }
   } catch (error) {
     console.error(`Error: ${error}`);
@@ -50,8 +56,9 @@ const handleSearch = async (e) => {
 const createLecturer = async (lecturerId) => {
   try {
     const response = await axios.post(
-      `http://localhost:3000/api/lecturer/${lecturerId}`,
+      `${apiUrl}/api/lecturer/${lecturerId}`,
     );
+    await getLecturerStatus();
     router.push({
       path: "/instructor",
       params: lecturerId,
@@ -71,19 +78,27 @@ const toLecturer = async (lecturerId) => {
 };
 
 const toStudentDashboard = async () => {
+  if (isAuthenticated) {
   router.push({
-    path: `/user/dashboard/${user.value._id}`
+    path: `/user/dashboard`
   })
+} else {
+  router.push('/home')
+}
 }
 
 const status = ref(false);
 const lecturer = ref("");
 const getLecturerStatus = async () => {
   try {
+    if (!user.value || !user.value._id) {
+      status.value = false;
+      return;
+    }
     const response = await axios.get(
-      `http://localhost:3000/api/lecturer/${user.value._id}`,
+      `${apiUrl}/api/lecturer/${user.value._id}`,
     );
-    if (response) {
+    if (response.status === 200 && response.data.lecturer) {
       status.value = true;
     } else {
       status.value = false;
@@ -91,6 +106,7 @@ const getLecturerStatus = async () => {
     console.log(response.data);
     console.log(status.value);
   } catch (err) {
+    status.value = false;
     console.log(err);
   }
 };
@@ -99,10 +115,25 @@ const closeMobileMenu = () => {
 };
 
 onMounted(() => {
-
   cartStore.fetchCourses();
-  notificationStore.fetchNotfications();
+  // Don't fetch notifications here - wait for socket to connect first
+  // Socket connection will trigger the initial fetch in initSocket()
+  if (!notificationStore.isConnected) {
+    // Fallback: fetch if socket isn't connected within a timeout
+    setTimeout(() => {
+      if (!notificationStore.isConnected) {
+        notificationStore.fetchNotfications();
+      }
+    }, 2000);
+  }
   getLecturerStatus();
+});
+
+// Watch for user changes to update lecturer status
+watch(() => user.value, () => {
+  if (user.value) {
+    getLecturerStatus();
+  }
 });
 
 
@@ -150,8 +181,9 @@ console.log(user);
             </div>
           </form>
 
-          <div class="flex items-center justify-end space-x-8 ml-8">
+          <div  class="flex items-center justify-end space-x-8 ml-8">
             <!-- Become a Lecturer -->
+
             <div
               v-if="!status"
               class="hover:text-green-600 transition-colors cursor-pointer text-sm font-medium"
@@ -165,8 +197,9 @@ console.log(user);
               @click="toLecturer(user._id)"
               class="hover:text-green-600 transition-colors cursor-pointer text-sm font-medium"
             >
-              To Lecturer Area
+              Lecturer Area
             </div>
+         
 
             <!-- Cart -->
             <RouterLink
@@ -240,7 +273,7 @@ console.log(user);
                             ></i>
                           </div>
                           <div class="text-sm w-full">
-                            Kha Banh mentioned you in a message
+                            {{ notification.message }}
                           </div>
 
                           <div

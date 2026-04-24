@@ -3,6 +3,7 @@ import { RouterLink } from "vue-router";
 import { useRoute } from "vue-router";
 import { ref, computed } from "vue";
 import { useAuthStore } from "../stores/auth.store";
+import { storeToRefs } from "pinia";
 const route = useRoute();
 
 const authStore = useAuthStore()
@@ -10,6 +11,8 @@ const authStore = useAuthStore()
 const logout = function() {
   authStore.logout()
 }
+
+const { user } = storeToRefs(authStore)
 const isActiveRoute = (path) => route.path === path;
 
 const isExpanded = ref(false);
@@ -28,7 +31,7 @@ const growOrShrink = computed(() => {
   <div class="py-4 px-2 hidden md:block">
         <div class="w-64 border rounded-lg outline-2 border-green-500">
           <div class="flex-col flex overflow-auto p-3 gap-1">
-            <p class="text-sm py-3 text-gray-500">Welcome, Akolay Nikosua</p>
+            <p class="text-sm py-3 text-gray-500">Welcome, {{ user.username }} </p>
 
             <RouterLink to="/user/dashboard">
               <div

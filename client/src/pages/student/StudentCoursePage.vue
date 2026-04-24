@@ -10,9 +10,11 @@ const { user } = storeToRefs(authStore);
 const courses = ref([]);
 const lecturer = ref([])
 const router = useRouter()
+const apiUrl = import.meta.env.VITE_API_URL;
 const getEnrolledCourses = async () => {
+  
   const response = await axios.get(
-    `http://localhost:3000/api/courses/owned/${user.value._id}`,
+    `${apiUrl}/api/courses/owned/${user.value._id}`,
   );
   courses.value = response.data.ownedCourses;
 
@@ -33,9 +35,9 @@ const searchQuery = ref("")
 const isSearched = ref(false)
 
 const queryCourses = ref([])
-const searchCourse = async () => {
+const searchCourse = async (req, res) => {
   try {
-    const response = await axios.get(`http://localhost:3000/api/courses/search/${user.value._id}?courseQuery=${searchQuery.value}`,
+    const response = await axios.get(`${apiUrl}/api/courses/search/${user.value._id}?courseQuery=${searchQuery.value}`,
     )
     queryCourses.value = response.data.courses
     if (searchQuery.value.length === 0) {
@@ -72,9 +74,12 @@ onMounted(getEnrolledCourses);
   <div
     v-if = "!isSearched"
     class="grid lg:grid-cols-3 grid-cols-2 sm:grid-cols-1 max-[640px]:grid-cols-1 container mx-auto justify-between p-3 space-y-2 space-x-3">
-    <CourseCard v-for="course in courses" :key="course._id" :title=course.title
-      description="Deep Dive in Core Java programming -Standard Edition. A Practical approach to learn Java. Become a Java Expert"
-      :lecturer="course.lecturerName" :images=course.courseImage owned-status="true" :progress="course.progressPercent"
+    <CourseCard v-for="course in courses" :key="course._id" 
+      :title=course.title
+      :lecturer="course.lecturerId?.lecturerName" 
+      :images=course.courseImage 
+      owned-status="true" 
+      :progress="course.progressPercent"
       @click="handleNavigation(course._id)" />
   </div>
 
@@ -82,8 +87,7 @@ onMounted(getEnrolledCourses);
     v-else-if = "isSearched"
     class="grid lg:grid-cols-3 grid-cols-2 sm:grid-cols-1 max-[640px]:grid-cols-1 container mx-auto justify-between p-3 space-y-2 space-x-3">
     <CourseCard v-for="course in queryCourses" :key="course._id" :title=course.title
-      description="Deep Dive in Core Java programming -Standard Edition. A Practical approach to learn Java. Become a Java Expert"
-      :lecturer="course.lecturerName" :images=course.courseImage owned-status="true" :progress="course.progressPercent"
+      :lecturer="course.lecturerId?.lecturerName" :images=course.courseImage owned-status="true" :progress="course.progressPercent"
       @click="handleNavigation(course._id)" />
   </div>
 </template>

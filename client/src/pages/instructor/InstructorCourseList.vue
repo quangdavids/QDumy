@@ -14,6 +14,7 @@ const showDialog = ref(false);
 const router = useRouter();
 const route = useRoute();
 const isVisible = false;
+const apiUrl = import.meta.env.VITE_API_URL;
 const handleNavigation = function () {
   router.push("/instructor/course/manage/");
 };
@@ -35,10 +36,10 @@ console.log(user.value._id);
 const getLecturerCourseInfo = async () => {
   try {
     const lecturerInfo = await axios.get(
-      `http://localhost:3000/api/lecturer/${user.value._id}`,
+      `${apiUrl}/api/lecturer/${user.value._id}`,
     );
     const response = await axios.get(
-      `http://localhost:3000/api/courses/list/${lecturerInfo.data.lecturer}?&page=${currentPage.value}&limit=${limit.value}`,
+      `${apiUrl}/api/courses/list/${lecturerInfo.data.lecturer}?&page=${currentPage.value}&limit=${limit.value}`,
     );
     console.log(lecturerInfo.data);
     lecturer.value = response.data.courses;
@@ -81,7 +82,7 @@ const closeDialog = function () {
 const submitCourse = async () => {
   try {
     const response = axios.put(
-      `http://localhost:3000/api/courses/submission/${courseId.value}`,
+      `${apiUrl}/api/courses/submission/${courseId.value}`,
     );
     console.log(response.data);
     getLecturerCourseInfo();
@@ -106,7 +107,7 @@ const closeDeleteDialog = function () {
 const deleteCourse = async () => {
   try {
     const response = axios.delete(
-      `http://localhost:3000/api/courses/${courseId.value}`,
+      `${apiUrl}/api/courses/${courseId.value}`,
     );
     console.log(response.data);
     showDeleteDialog.value = false;

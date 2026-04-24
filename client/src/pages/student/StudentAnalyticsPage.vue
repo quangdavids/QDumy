@@ -30,7 +30,7 @@ ChartJS.register(
 );
 const authStore = useAuthStore();
 const { user } = storeToRefs(authStore);
-
+const apiUrl = import.meta.env.VITE_API_URL;
 const completedCourse = ref(0);
 const ongoingCourse = ref(0);
 const totalCourses = ref(0);
@@ -46,7 +46,7 @@ const barData = ref({
 
 const getAnalyticData = async () => {
   const response = await axios.get(
-    `http://localhost:3000/api/user/analytic/${user.value._id}`,
+    `${apiUrl}/api/user/analytic/${user.value._id}`,
   );
 
   console.log(response);
@@ -71,7 +71,7 @@ const progress = ref("");
 const getCompletedAndRemainingLessonsData = async () => {
   try {
     const response = await axios.get(
-      `http://localhost:3000/api/user/lesson-comparison/${user.value._id}`,
+      `${apiUrl}/api/user/lesson-comparison/${user.value._id}`,
     );
     progress.value = response.data;
     completed.value = response.data.completed;
@@ -249,7 +249,7 @@ onMounted(() => {
     </div>
 
     <div class="w-full p-3 chart-container shadow-md rounded-lg">
-       <p class="text-center font-semibold text-lg mb-4">Course Access Daily</p>
+       <p class="text-center font-semibold text-lg mb-4">Course Lessons Completed vs. Remaining</p>
       <div class="h-[300px] w-full p-4 rounded-lg">
         <Bar :data="barData" :options="barOptions" />
       </div>

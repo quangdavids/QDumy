@@ -1,16 +1,10 @@
 const multer = require("multer");
-const path = require("path");
 
-// Configure storage
-const storage = multer.diskStorage({
+// Use memory storage instead of disk storage
+// This avoids filesystem issues on deployment platforms like Render
+const storage = multer.memoryStorage();
 
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-// FIX: Update the fileFilter to accept both images and videos
+// File filter to accept both images and videos
 const fileFilter = (req, file, cb) => {
   // Check if the file is an image or a video
   if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {

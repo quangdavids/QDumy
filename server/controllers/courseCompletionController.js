@@ -2,10 +2,12 @@ const express = require("express");
 const Course = require("../model/courseSchema");
 const CourseCompletion = require("../model/courseCompletionSchema")
 const Lesson = require("../model/lessonSchema");
+const Lecturer = require("../model/lecturerSchema")
 const markComplete = async (req, res) => {
   const { courseId, lessonId } = req.body;
   const userId = req.params.userId;
 
+  const lecturerId = await Lecturer.findOne({ownedCourses: courseId})
   let progress = await CourseCompletion.findOne({
     userId: userId,
     courseId: courseId,
@@ -15,6 +17,7 @@ const markComplete = async (req, res) => {
     progress = await CourseCompletion.create({
       userId: userId,
       courseId: courseId,
+      lecturerId: lecturerId._id,
       lesson: lessonId,
       completedLessons: [],
     });

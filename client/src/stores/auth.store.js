@@ -14,8 +14,9 @@ export const useAuthStore = defineStore("auth", {
   actions: {
     async register(data) {
       try {
+        const apiUrl = import.meta.env.VITE_API_URL;
         const response = await axios.post(
-          "http://localhost:3000/auth/register",
+          `${apiUrl}/auth/register`,
           data,
           { withCredentials: true }
         );
@@ -35,8 +36,9 @@ export const useAuthStore = defineStore("auth", {
     },
     async signIn(data) {
       try {
+        const apiUrl = import.meta.env.VITE_API_URL;
         const response = await axios.post(
-          "http://localhost:3000/auth/login",
+          `${apiUrl}/auth/login`,
           data,
            { withCredentials: true }
         );
@@ -72,8 +74,9 @@ export const useAuthStore = defineStore("auth", {
     },
     async logout() {
       try {       
+        const apiUrl = import.meta.env.VITE_API_URL;
         const response = await axios.post(
-        "http://localhost:3000/auth/logout",
+        `${apiUrl}/auth/logout` ,
         {},
         { 
           withCredentials: true,
@@ -89,26 +92,6 @@ export const useAuthStore = defineStore("auth", {
     }catch (e) {
       console.log(e)
     }
-    },
-    async refreshToken() {
-      try {
-        const response = await axios.post(
-          "http://localhost:3000/auth/refresh-token",
-          {},
-          { withCredentials: true }
-        );
-        this.token = response.data.accessToken;
-        localStorage.setItem("token", this.token);
-        this.error = null;
-        return this.token;
-      } catch (err) {
-        this.token = null;
-        this.user = null;
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        this.error = err.response?.data?.message || "Token refresh failed";
-        throw new Error(this.error);
-      }
     },
   },
 });

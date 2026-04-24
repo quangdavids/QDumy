@@ -18,7 +18,7 @@ const { user } = storeToRefs(authStore);
 
 const route = useRoute();
 const open = ref(true);
-
+const apiUrl = import.meta.env.VITE_API_URL;
 const toggleLessonSection = function(){
   open.value = !open.value
 }
@@ -27,8 +27,8 @@ const getLessonData = async () => {
   try {
     const userId = user.value?._id;
     const url = userId 
-      ? `http://localhost:3000/api/courses/${courseId}/${userId}/lessons`
-      : `http://localhost:3000/api/courses/${courseId}/lessons`;
+      ? `${apiUrl}/api/courses/${courseId}/${userId}/lessons`
+      : `${apiUrl}/api/courses/${courseId}/lessons`;
     
     const response = await axios.get(url);
     console.log(response);
@@ -52,7 +52,7 @@ const getLessonData = async () => {
 const course = ref("")
 const getCourseData = async () => {
   try {
-    const response = await axios.get(`http://localhost:3000/api/courses/${courseId}`)
+    const response = await axios.get(`${apiUrl}/api/courses/${courseId}`)
     course.value = response.data.course
     console.log(response.data)
   } catch (err) {
@@ -63,7 +63,7 @@ const getCourseData = async () => {
 const time = ref("")
 const getTotalTime = async () => {
   try {
-    const response = await axios.get(`http://localhost:3000/api/courses/total-time/${courseId}`)
+    const response = await axios.get(`${apiUrl}/api/courses/total-time/${courseId}`)
     console.log(response.data.totalTime)
     time.value = response.data.totalTime
   } catch (err) {
@@ -126,7 +126,7 @@ const progressPercent = ref("");
 const handleVideoEnded = async () => {
   try {
     const response = await axios.post(
-      `http://localhost:3000/api/progress/mark-complete/${user.value._id}`,
+      `${apiUrl}/api/progress/mark-complete/${user.value._id}`,
       {
         courseId: courseId,
         lessonId: courseLessons.value[playingIndex.value]._id,
@@ -226,7 +226,7 @@ console.log(playingIndex.value);
         
         <div class="flex p-2  w-full  items-start  gap-6">
           <div class="flex items-center   gap-2 "> 
-            <p class="font-semibold text-yellow-700 text-lg">{{ course.rating }}</p>
+            <p class="font-semibold text-yellow-700 text-lg">{{ course.rating?.toFixed(1) }}</p>
             <div>
             <i class="fa fa-star text-yellow-700"></i>
             </div>

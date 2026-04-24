@@ -35,8 +35,8 @@ import { useAuthStore } from "../stores/auth.store";
 const routes = [
   { path: "/", component: HomePage, meta: {showChatbot: true} },
   { path: "/home", component: HomePage, meta: {showChatbot: true} },
-  { path: "/login", component: LoginPage,  },
-  { path: "/register", component: RegisterPage,   },
+  { path: "/login", component: LoginPage, meta: {hideFooter:true}  },
+  { path: "/register", component: RegisterPage,  meta: {hideFooter:true} },
   // meta:
   // {
   //   hideNavbar: true,

@@ -4,3 +4,28 @@
 @import "primevue/resources/primevue.min.css";
 @import "primeicons/primeicons.css";
 /* Custom Plyr theme */
+.plyr__progress .plyr__progress--played,
+.plyr__volume input::-webkit-slider-thumb,
+.plyr__volume input::-moz-range-thumb {
+  background-color: #09c515 !important; /* Tailwind blue-500 */
+}
+
+.plyr__controls button {
+  background-color: green !important; /* Tailwind blue-900 */
+  border-radius: 9999px;
+  padding: 0.5rem;
+  transition: background 0.3s ease;
+}
+
+.plyr__controls button:hover {
+  background-color: #1d6308 !important; /* Tailwind blue-600 */
+}
+
+.plyr__controls button svg {
+  height: 24px;
+  width: 24px;
+}
+
+* {
+  font-family: "Montserrat", sans-serif;
+}

@@ -14,6 +14,7 @@ const router = useRouter();
 const loading = ref(false);
 const error = ref("");
 
+const apiUrl = import.meta.env.VITE_API_URL;
 // Fetch cart items on mount
 onMounted(async () => {
   await cartStore.fetchCourses();
@@ -56,7 +57,7 @@ const createCheckoutSession = async () => {
     
     // Create checkout session
     const response = await axios.post(
-      "http://localhost:3000/api/payment/create-checkout-session",
+      `${apiUrl}/api/payment/create-checkout-session`,
       { 
         courses: cartItems,
         userId: authStore.user?._id
@@ -96,14 +97,7 @@ const removeFromCart = async (courseId) => {
 
 <template>
   <div class="min-h-screen max-w-screen">
-    <!-- <div v-if="courses.length === 0" class="flex justify-center items-center h-screen">
-      <div class="text-center">
-        <p class="text-2xl font-bold mb-4">Your cart is empty</p>
-        <RouterLink to="/courses" class="text-blue-500 underline">
-          Continue Shopping
-        </RouterLink>
-      </div>
-    </div> -->
+
 
     <div class="flex justify-center gap-3 mt-5 md:flex-row flex-col container mx-auto">
       <div class="bg-white rounded-lg shadow-lg mt-5 sm:w-full md:w-[50%]">

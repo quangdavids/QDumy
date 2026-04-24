@@ -14,6 +14,7 @@ import { useCartStore } from "../../stores/cart.store";
 const cartStore = useCartStore();
 const { courses } = storeToRefs(cartStore)
 
+const apiUrl = import.meta.env.VITE_API_URL;
 function toggleDescription(index) {
   lessons.value[index].show = !lessons.value[index].show;
 }
@@ -47,7 +48,7 @@ const getCourseDetail = async () => {
 //     const lecturer = await getCourseAPI(courseId);
 //     console.log(lecturer.course.lecturerId._id)
 //     const response = await axios.get(
-//       `http://localhost:3000/api/lecturer/${lecturer.course.lecturerId._id}`,
+//       `${apiUrl}/api/lecturer/${lecturer.course.lecturerId._id}`,
 //     );
 //     // lecturer.value = response.data.lecturer;
 //     console.log(response.data.lecturer);
@@ -60,7 +61,7 @@ const getCourseDetail = async () => {
 const time = ref(0)
 const getTotalTime = async () => {
   try {
-    const response = await axios.get(`http://localhost:3000/api/courses/total-time/${courseId}`)
+    const response = await axios.get(`${apiUrl}/api/courses/total-time/${courseId}`)
     console.log(response.data.totalTime)
     time.value = response.data.totalTime
   } catch (err) {
@@ -109,7 +110,7 @@ const overviewActive = computed(() => {
 const getLatestReviews = async () => {
   try {
     const response = await axios.get(
-      `http://localhost:3000/api/reviews/${courseId}`,
+      `${apiUrl}/api/reviews/${courseId}`,
     );
     latestReviews.value = response.data.reviews;
   
@@ -122,7 +123,7 @@ const rating = ref(0)
 const newReview = ref("")
 const addReview = async () => {
   try{
-    const response = await axios.post(`http://localhost:3000/api/review/${courseId}/${user.value._id}`, 
+    const response = await axios.post(`${apiUrl}/api/review/${courseId}/${user.value._id}`, 
     {content: newReview.value, rating: rating.value})
     newReview.value = response.data 
     console.log(newReview.value)
@@ -137,7 +138,7 @@ const userReview = ref("")
 const isEditReview = ref(false)
 const getUserReview = async () => {
   try {
-    const response = await axios.get(`http://localhost:3000/api/review/${courseId}/${user.value._id}`)
+    const response = await axios.get(`${apiUrl}/api/review/${courseId}/${user.value._id}`)
     userReview.value = response.data
     console.log(userReview.value)
     
@@ -162,7 +163,7 @@ const courseBoughtStatus = ref(false);
 const checkCourseBoughtStatus = async () => {
   try {
     const response = await axios.get(
-      `http://localhost:3000/api/courses/bought/${user.value._id}/${courseId}`,
+      `${apiUrl}/api/courses/bought/${user.value._id}/${courseId}`,
     );
     courseBoughtStatus.value = response.data.status
     console.log(courseBoughtStatus.value)

@@ -34,7 +34,7 @@ const languages = ref([
 const displayedLanguages = computed(() => {
   return showAll.value ? languages.value : languages.value.slice(0, 4);
 });
-const api = "http://localhost:3000/api/";
+const apiUrl = import.meta.env.VITE_API_URL;
 
 const searchResults = ref([]);
 const level = ref([]);
@@ -52,9 +52,9 @@ const displaySearch = async () => {
   }
 
   try {
-    const response = await axios.get(`${api}courses/search`, {
+    const response = await axios.get(`${apiUrl}/api/courses/search`, {
       params: {
-        query: route.query.query,
+        query: route.query.query || "",
         page: route.query.page || 1,
         limit: limit.value,
         level: route.query.level,

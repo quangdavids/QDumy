@@ -12,7 +12,7 @@ const publishedClicked = ref(false)
 const rejectedClicked = ref(false)
 
 const router = useRouter()
-
+const apiUrl = import.meta.env.VITE_API_URL;
 const handlePendingClicked = function() {
     pendingClicked.value = !pendingClicked.value
     publishedClicked.value = false 
@@ -38,7 +38,7 @@ const viewCourseDetails = function(courseId) {
 }
 const getCourses = async () => {
   try {
-    const response = await axios.get("http://localhost:3000/api/admin/courses");
+    const response = await axios.get(`${apiUrl}/api/admin/courses`);
     pendingCourses.value = response.data.pendingCourses;
     publishedCourses.value = response.data.publishedCourses;
     rejectedCourses.value = response.data.rejectedCourses
@@ -50,7 +50,7 @@ const getCourses = async () => {
 
 const publishCourse = async (courseId) => {
   try {
-    const response = await axios.put(`http://localhost:3000/api/admin/publish/${courseId}`)
+    const response = await axios.put(`${apiUrl}/api/admin/publish/${courseId}`)
     console.log(response.data)
     getCourses()
   } catch (err) {
@@ -60,7 +60,7 @@ const publishCourse = async (courseId) => {
 
 const rejectCourse = async (courseId) => {
   try {
-    const response = await axios.put(`http://localhost:3000/api/admin/reject/${courseId}`)
+    const response = await axios.put(`${apiUrl}/api/admin/reject/${courseId}`)
     console.log(response.data)
     getCourses()
   } catch (err) {

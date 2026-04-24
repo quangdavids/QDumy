@@ -7,11 +7,12 @@ const list = ref([]);
 
 const route = useRoute()
 const router = useRouter()
+const apiUrl = import.meta.env.VITE_API_URL;
 const courseId = route.params.courseId
 const getLessons = async () => {
   try {
     const response = await axios.get(
-      `http://localhost:3000/api/courses/${courseId}/lessons`,
+      `${apiUrl}/api/courses/${courseId}/lessons`,
     );
     list.value = response.data.lessonsList;
     console.log(list.value)

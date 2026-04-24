@@ -111,7 +111,7 @@ const createCheckoutSession = async (req, res) => {
 const verifyPayment = async (req, res) => {
   try {
     const { session_id, userId: queryUserId } = req.query;
-    // Handle both Firebase (uid) and JWT (userId) token formats
+    
     const userId = req.user?.userId || req.user?._id || req.user?.uid || queryUserId;
 
     if (!session_id) {
@@ -193,14 +193,6 @@ const verifyPayment = async (req, res) => {
             { $push: { studentsEnrolled: userId }},
             { new: true }
           )
-
-          // const courseStart = new CourseCompletion({
-          //   courseId: courseData, 
-          //   lecturerId: courseData.lecturerId,
-          //   userId: userId
-          // })
-          // const savedCourse = await courseStart.save()
-          // console.log(savedCourse)
           console.log(
             `Lecturer ${courseData.lecturerId} earned $${revenueFromCourse} from course ${courseData.title}`
           );

@@ -4,13 +4,17 @@ import { ref, nextTick, watch, onMounted } from "vue";
 
 import { useRouter } from "vue-router";
 import CoursePill from "./CoursePill.vue";
-
+import { useAuthStore } from "../stores/auth.store";
+import { storeToRefs } from "pinia";
 const messages = ref([]);
 const userInput = ref("");
 const container = ref(null);
 
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
 const router = useRouter()
 const isCloseChatbot = ref(false)
+const apiUrl = import.meta.env.VITE_API_URL;
 const getGeminiRecommendation = async () => {
   if (userInput.value.trim()) {
     messages.value.push({
@@ -19,7 +23,7 @@ const getGeminiRecommendation = async () => {
     });
 
     const response = await axios.post(
-      "http://localhost:3000/api/ai/recommend/689db3205c1d567706e7aea8",
+      `${apiUrl}/api/ai/recommend/${user.value._id}`,
       { message: userInput.value }
     );
     console.log(response.data);
@@ -31,7 +35,7 @@ const getGeminiRecommendation = async () => {
 
 const getMessages = async () => {
   const response = await axios.get(
-    `http://localhost:3000/api/ai/messages/689db3205c1d567706e7aea8`
+    `${apiUrl}/api/ai/messages/${user.value._id}`
   );
   console.log(response.data);
   messages.value = response.data.messages;
@@ -61,7 +65,11 @@ watch(
   { deep: true }
 );
 
+const isOpen = ref(false)
 
+const toggleChatbot = function() {
+  isOpen.value = !isOpen.value
+}
 
 onMounted(() => {
   getMessages();
@@ -69,13 +77,13 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="  h-100 z-100" >
+  <div v-if="isOpen" class="  h-100 z-100" >
     <div class="max-w-sm  w-60 rounded-lg">
       <div class="h-auto bg-white rounded-t-lg shadow-lg p-3 flex justify-between">
         <div class="flex gap-3 items-cente">
           <div>
             <img
-              src="\images\students\blonde.jpg"
+              src="\images\quangdemy.png"
               class="w-7 h-7 rounded-full border"
             />
           </div>
@@ -88,7 +96,7 @@ onMounted(() => {
         </div>
 
         <div class="flex mt-1" >
-          <i  class="fa fa-x text-[9px] flex hover:text-red-500 duration-200"
+          <i @click="toggleChatbot"  class="fa fa-x text-[16px] cursor-pointer flex hover:text-red-500 duration-200"
           ></i>
         </div>
       </div>
@@ -151,6 +159,11 @@ onMounted(() => {
       </div>
     </div>
   </div>
+
+  <button v-if="!isOpen" @click="toggleChatbot" class="px-6 py-4 hover:bg-black cursor-pointer flex gap-3 items-center rounded-full text-lg font-semibold bg-green-500 text-white outline-white outline-1">
+  <i class="fa-solid fa-headphones text-[25px]"></i>
+   Chat 
+</button>
 </template>
 
 <style lang="css" scoped></style>

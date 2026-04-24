@@ -29,6 +29,7 @@ ChartJS.register(
   PointElement,
 );
 
+const apiUrl = import.meta.env.VITE_API_URL;
 const authStore = useAuthStore();
 const { user } = storeToRefs(authStore);
 const doughnutCourseCompletionData = ref({ labels: [], datasets: [] });
@@ -40,7 +41,7 @@ const lecturerData = ref("");
 const getLecturer = async () => {
   try {
     const response = await axios.get(
-      `http://localhost:3000/api/lecturer-data/${user.value._id}`,
+      `${apiUrl}/api/lecturer-data/${user.value._id}`,
     );
     lecturerData.value = response.data.lecturer;
     console.log(response.data);
@@ -53,10 +54,10 @@ const totalStudentsEnrolled = ref()
 const getTotalStudentsEnrolled = async () => {
   try {
     const findLecturer = await axios.get(
-      `http://localhost:3000/api/lecturer-data/${user.value._id}`,
+      `${apiUrl}/api/lecturer-data/${user.value._id}`,
     );
     const response = await axios.get(
-      `http://localhost:3000/api/lecturer/total-students/${findLecturer.data.lecturer._id}`,
+      `${apiUrl}/api/lecturer/total-students/${findLecturer.data.lecturer._id}`,
     );
     totalStudentsEnrolled.value = response.data.totalStudent
     console.log(totalStudentsEnrolled.value)
@@ -68,10 +69,10 @@ const getTotalStudentsEnrolled = async () => {
 const getLecturerDailyRevenue = async () => {
   try {
     const findLecturer = await axios.get(
-      `http://localhost:3000/api/lecturer-data/${user.value._id}`,
+      `${apiUrl}/api/lecturer-data/${user.value._id}`,
     );
     const response = await axios.get(
-      `http://localhost:3000/api/daily-revenue/${findLecturer.data.lecturer._id}`,
+      `${apiUrl}/api/daily-revenue/${findLecturer.data.lecturer._id}`,
     );
     lineChartData.value = {
       labels: response.data.dailyRevenue.map((label) => label._id),
@@ -91,10 +92,10 @@ const getLecturerDailyRevenue = async () => {
 const getCourseCompletion = async () => {
   try {
     const findLecturer = await axios.get(
-      `http://localhost:3000/api/lecturer-data/${user.value._id}`,
+      `${apiUrl}/api/lecturer-data/${user.value._id}`,
     );
     const response = await axios.get(
-      `http://localhost:3000/api/lecturer/completed-ongoing/${findLecturer.data.lecturer._id}`,
+      `${apiUrl}/api/lecturer/completed-ongoing/${findLecturer.data.lecturer._id}`,
     );
 
     doughnutCourseCompletionData.value = {
@@ -115,10 +116,10 @@ const getCourseCompletion = async () => {
 const getDailyEnrollments = async () => {
   try {
     const findLecturer = await axios.get(
-      `http://localhost:3000/api/lecturer-data/${user.value._id}`,
+      `${apiUrl}/api/lecturer-data/${user.value._id}`,
     );
     const response = await axios.get(
-      `http://localhost:3000/api/lecturer/enrollments/${findLecturer.data.lecturer._id}`,
+      `${apiUrl}/api/lecturer/enrollments/${findLecturer.data.lecturer._id}`,
     );
     console.log(response.data);
     barDataEnrollments.value = {

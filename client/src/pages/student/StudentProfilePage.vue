@@ -9,7 +9,7 @@ import 'vue3-toastify/dist/index.css';
 
 
 const authStore = useAuthStore();
-
+const apiUrl = import.meta.env.VITE_API_URL;
 const { user, token } = storeToRefs(authStore);
 const username = ref("");
 const email = ref("");
@@ -18,7 +18,7 @@ const userData = ref({});
 const getUserProfile = async () => {
   try {
     const response = await axios.get(
-      `http://localhost:3000/api/user/info/${user.value._id}`,
+      `${apiUrl}/api/user/info/${user.value._id}`,
     );
     userData.value = response.data.userData;
     username.value = userData.value.username;
@@ -70,7 +70,7 @@ const editUserProfile = async () => {
       formData.append("profileImg", profileImg.value);
     }
     const response = await axios.put(
-      `http://localhost:3000/api/user/edit/${user.value._id}`,
+      `https://qdumy-server.onrender.com/api/user/edit/${user.value._id}`,
       formData,
       {
         headers: {

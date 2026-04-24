@@ -14,7 +14,7 @@ const router = useRouter();
 const route = useRoute();
 
 const isActiveRoute = (path) => route.path === path;
-console.log(route.path)
+console.log(route.path);
 const props = defineProps(["editedCourse", "courseId"]);
 const steps = shallowRef([
   { id: 1, title: "Course Details", component: CourseDetailsCreate },
@@ -28,6 +28,7 @@ const steps = shallowRef([
 // }
 // console.log(currentStep.value)
 
+const apiUrl = import.meta.env.VITE_API_URL;
 let currentStep = ref(1);
 const categories = ref([
   { text: "Computer Science", value: "Computer Science" },
@@ -52,44 +53,37 @@ const prevStep = function () {
     currentStep.value--;
   }
 };
-const course = ref({})
-const editCourseData= ref({})
-console.log(route.params.courseId)
+const course = ref({});
+const editCourseData = ref({});
+console.log(route.params.courseId);
+
 const getCourse = async () => {
   try {
-    const response = await axios.get(`http://localhost:3000/api/courses/${route.params.courseId}`)
-    console.log(response.data.course)
-    course.value = response.data.course
+    const response = await axios.get(
+      `${apiUrl}/api/courses/${route.params.courseId}`,
+    );
+    console.log(response.data.course);
+    course.value = response.data.course;
     editCourseData.value = {
-      title: course.value.title || '',
-      introduction: course.value.introduction || '',
+      title: course.value.title || "",
+      introduction: course.value.introduction || "",
       lecturerId: user.value._id,
       requirements: course.value.requirements || [],
       learningQualities: course.value.learningQualities || [],
-      level: course.value.level || '',
-      category: course.value.category || '',
-      description: course.value.description || '',
+      level: course.value.level || "",
+      category: course.value.category || "",
+      description: course.value.description || "",
       promotionalVideo: course.value.promotionalVideo || null,
       courseImage: course.value.courseImage || null,
-      price: course.value.price || 0
-    }
-    
-    console.log(editCourseData.value)
-      return course.value
-    } catch (e) {
-    console.log(e)
+      price: course.value.price || 0,
+    };
+
+    console.log(editCourseData.value);
+    return course.value;
+  } catch (e) {
+    console.log(e);
   }
-}
-
-
-onMounted(async() => {
-  if (route.params.courseId) {
-    const courseData = await getCourse()
-    console.log('Fetch course:', courseData)
-  }
-})
-
-
+};
 
 
 const loading = ref(false);
@@ -98,7 +92,6 @@ const uploadProgress = ref(0);
 const courseData = ref({
   title: "",
   introduction: "",
-  lecturerId: user.value._id,
   requirements: [],
   learningQualities: [],
   level: "",
@@ -106,24 +99,51 @@ const courseData = ref({
   description: "",
   promotionalVideo: null,
   courseImage: null,
-  price:0
+  price: 0,
+});
+const instructor = ref("")
+const getInstructorDetail = async () => {
+  try {
+    const response = await axios.get(`${apiUrl}/api/lecturer/${user.value._id}`);
+    instructor.value = response.data.lecturer
+    console.log(instructor.value)
+  } catch (error) {
+    console.error("Error fetching instructor details:", error);
+  }
+};
+
+
+onMounted(async () => {
+  if (route.params.courseId) {
+    const courseData = await getCourse();
+    console.log("Fetch course:", courseData);
+  }
+  getInstructorDetail()
 });
 
-const getInstructorDetail = async() => {
-    const reponse = axios.get("http://localhost:3000/api/lecturerId/")
-}
 
 const addCourse = async () => {
   try {
     loading.value = true;
+    
+    // Debug logging
+    console.log("Current user:", user.value);
+    console.log("User ID:", user.value._id);
+    
     const formData = new FormData();
     formData.append("title", courseData.value.title);
     formData.append("introduction", courseData.value.introduction);
-    formData.append("lecturerId", courseData.value.lecturerId);
+    formData.append("lecturerId", instructor.value);
     formData.append("level", courseData.value.level);
     formData.append("category", courseData.value.category);
     formData.append("description", courseData.value.description);
-    formData.append("price", courseData.value.price)
+    formData.append("price", courseData.value.price);
+
+    // Log FormData contents
+    console.log("FormData contents:");
+    for (let [key, value] of formData.entries()) {
+      console.log(`  ${key}:`, value);
+    }
 
     courseData.value.requirements.forEach((req, index) => {
       formData.append(`requirements[${index}]`, req);
@@ -142,7 +162,7 @@ const addCourse = async () => {
     }
 
     const response = await axios.post(
-      "http://localhost:3000/api/courses",
+      `${apiUrl}/api/courses`,
       formData,
       {
         headers: {
@@ -150,13 +170,13 @@ const addCourse = async () => {
         },
         onUploadProgress: (progressEvent) => {
           uploadProgress.value = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
+            (progressEvent.loaded * 100) / progressEvent.total,
           );
         },
-      }
+      },
     );
     console.log(response.data);
-    router.push("/instructor/course")
+    router.push("/instructor/course");
   } catch (e) {
     console.log(e);
   } finally {
@@ -164,7 +184,6 @@ const addCourse = async () => {
     uploadProgress.value = 0;
   }
 };
-
 
 const updateCourse = async () => {
   try {
@@ -175,8 +194,8 @@ const updateCourse = async () => {
     formData.append("level", editCourseData.value.level);
     formData.append("category", editCourseData.value.category);
     formData.append("description", editCourseData.value.description);
-    formData.append("price", editCourseData.value.price)
-    console.log(user.value._id)
+    formData.append("price", editCourseData.value.price);
+    console.log(user.value._id);
     editCourseData.value.requirements.forEach((req, index) => {
       formData.append(`requirements[${index}]`, req);
     });
@@ -186,35 +205,38 @@ const updateCourse = async () => {
     });
 
     if (editCourseData.value.promotionalVideo) {
-      formData.append('promotionalVideo', editCourseData.value.promotionalVideo);
+      formData.append(
+        "promotionalVideo",
+        editCourseData.value.promotionalVideo,
+      );
     }
 
     if (editCourseData.value.courseImage) {
-      formData.append('courseImage', editCourseData.value.courseImage);
+      formData.append("courseImage", editCourseData.value.courseImage);
     }
 
     // FIX: Send formData directly as the request body
     const response = await axios.put(
-      `http://localhost:3000/api/courses/${route.params.courseId}`,
-      formData,  // Send formData directly
+      `${apiUrl}/api/courses/${route.params.courseId}`,
+      formData, // Send formData directly
       {
         headers: {
           "Content-Type": "multipart/form-data",
         },
         onUploadProgress: (progressEvent) => {
           uploadProgress.value = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
+            (progressEvent.loaded * 100) / progressEvent.total,
           );
         },
-      }
+      },
     );
 
     console.log(response.data);
-    router.push('/instructor/course');
+    router.push("/instructor/course");
   } catch (e) {
-    console.error('Update error:', e);
+    console.error("Update error:", e);
   }
-}
+};
 </script>
 
 <template>
@@ -223,7 +245,9 @@ const updateCourse = async () => {
       <!-- Stepper -->
       <div class="mb-8">
         <div class="flex items-center justify-between relative">
-          <div class="absolute left-0 top-1/2 transform -translate-y-1/2 w-full h-1 bg-gray-200 -z-10"></div>
+          <div
+            class="absolute left-0 top-1/2 transform -translate-y-1/2 w-full h-1 bg-gray-200 -z-10"
+          ></div>
           <div
             v-for="(step, index) in steps"
             :key="step.id"
@@ -237,8 +261,8 @@ const updateCourse = async () => {
                 currentStep > index + 1
                   ? 'border-green-500 bg-green-500 text-white'
                   : currentStep === index + 1
-                  ? 'border-green-500 text-green-500'
-                  : 'border-gray-300 text-gray-400',
+                    ? 'border-green-500 text-green-500'
+                    : 'border-gray-300 text-gray-400',
               ]"
             >
               <i v-if="currentStep > index + 1" class="fa-solid fa-check"></i>
@@ -257,7 +281,9 @@ const updateCourse = async () => {
       </div>
 
       <!-- Main Content -->
-      <div class="bg-white shadow-lg rounded-xl overflow-hidden border border-gray-100">
+      <div
+        class="bg-white shadow-lg rounded-xl overflow-hidden border border-gray-100"
+      >
         <div class="p-6 sm:p-8">
           <component
             v-if="!route.params.courseId"
@@ -273,8 +299,12 @@ const updateCourse = async () => {
           <!-- Upload Progress -->
           <div v-if="uploadProgress > 0 && loading" class="mt-6">
             <div class="flex justify-between mb-1">
-              <span class="text-sm font-medium text-green-700">Uploading...</span>
-              <span class="text-sm font-medium text-green-700">{{ uploadProgress }}%</span>
+              <span class="text-sm font-medium text-green-700"
+                >Uploading...</span
+              >
+              <span class="text-sm font-medium text-green-700"
+                >{{ uploadProgress }}%</span
+              >
             </div>
             <div class="w-full bg-gray-200 rounded-full h-2.5">
               <div
@@ -286,7 +316,9 @@ const updateCourse = async () => {
         </div>
 
         <!-- Navigation Footer -->
-        <div class="bg-gray-50 px-6 py-4 flex justify-between items-center border-t border-gray-100">
+        <div
+          class="bg-gray-50 px-6 py-4 flex justify-between items-center border-t border-gray-100"
+        >
           <button
             @click="prevStep"
             :disabled="currentStep === 1"
@@ -305,22 +337,36 @@ const updateCourse = async () => {
             </button>
 
             <button
-              v-if="currentStep === steps.length && !isActiveRoute(`/instructor/course/edit/${route.params.courseId}/`)"
+              v-if="
+                currentStep === steps.length &&
+                !isActiveRoute(
+                  `/instructor/course/edit/${route.params.courseId}/`,
+                )
+              "
               @click="addCourse"
               :disabled="loading"
               class="px-6 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors disabled:opacity-70"
             >
-              <span v-if="loading"><i class="fas fa-spinner fa-spin mr-2"></i>Creating...</span>
+              <span v-if="loading"
+                ><i class="fas fa-spinner fa-spin mr-2"></i>Creating...</span
+              >
               <span v-else>Create Course</span>
             </button>
 
             <button
-              v-if="currentStep === steps.length && isActiveRoute(`/instructor/course/edit/${route.params.courseId}/`)"
+              v-if="
+                currentStep === steps.length &&
+                isActiveRoute(
+                  `/instructor/course/edit/${route.params.courseId}/`,
+                )
+              "
               @click="updateCourse"
               :disabled="loading"
               class="px-6 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors disabled:opacity-70"
             >
-              <span v-if="loading"><i class="fas fa-spinner fa-spin mr-2"></i>Updating...</span>
+              <span v-if="loading"
+                ><i class="fas fa-spinner fa-spin mr-2"></i>Updating...</span
+              >
               <span v-else>Update Course</span>
             </button>
           </div>

@@ -2,7 +2,6 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import { useAuthStore } from "./auth.store";
 import { io } from "socket.io-client";
-
 export const useNotificationStore = defineStore("notification", {
   state: () => ({
     notifications: [],
@@ -18,7 +17,7 @@ export const useNotificationStore = defineStore("notification", {
       const authStore = useAuthStore();
       if (!authStore.user) return;
 
-      this.socket = io("http://localhost:3000", {
+      this.socket = io("${apiUrl}", {
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
@@ -81,9 +80,10 @@ export const useNotificationStore = defineStore("notification", {
 
     async fetchNotfications() {
       try {
+        const apiUrl = import.meta.env.VITE_API_URL;
         const authStore = useAuthStore();
         const response = await axios.get(
-          `http://localhost:3000/api/notification/${authStore.user._id}`,
+          `${apiUrl}/api/notification/${authStore.user._id}`,
         );
         this.notifications = response.data.notification;
         this.updateUnreadCount();
@@ -94,9 +94,10 @@ export const useNotificationStore = defineStore("notification", {
     },
     async fetchLecturerNotifications() {
       try {
+        const apiUrl = import.meta.env.VITE_API_URL;
         const authStore = useAuthStore();
         const response = await axios.get(
-          `http://localhost:3000/api/notification/lecturer/${authStore.user._id}`,
+          `${apiUrl}/api/notification/lecturer/${authStore.user._id}`,
         );
         this.notifications = response.data.notification;
         this.updateUnreadCount();
@@ -107,8 +108,9 @@ export const useNotificationStore = defineStore("notification", {
     },
     async readNotification(notificationId) {
       try {
+        const apiUrl = import.meta.env.VITE_API_URL;
         const response = await axios.put(
-          `http://localhost:3000/api/notification/read/${notificationId}`,
+          `${apiUrl}/api/notification/read/${notificationId}`,
         );
         console.log(response.data);
       } catch (err) {
@@ -118,8 +120,9 @@ export const useNotificationStore = defineStore("notification", {
 
     async deleteNotification(notificationId) {
       try {
+        const apiUrl = import.meta.env.VITE_API_URL;
         const response = await axios.delete(
-          `http://localhost:3000/api/notification/${notificationId}`,
+          `${apiUrl}/api/notification/${notificationId}`,
         );
         console.log(response.data);
         this.notifications = this.notifications.filter((n) => n._id !== notificationId);

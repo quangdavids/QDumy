@@ -1,5 +1,5 @@
 <script setup>
-
+import { ref } from "vue";
 const props = defineProps([
   "images",
   "title",
@@ -7,9 +7,11 @@ const props = defineProps([
   "description",
   "lecturer",
   "progress",
+  "rating",
+  "noOfLessons",
   "ownedStatus"
 ]);
-
+const owned = ref(false);
 </script>
 
 <template>
@@ -38,8 +40,14 @@ const props = defineProps([
       </div>
 
       <div class="flex flex-col  mb-auto max-w-lg gap-1 text-[15px] font-bold  ">
+        <div class="flex justify-between items-center">
         <div class="text-md">
           {{ title }}
+        </div>
+
+        <div v-if="props.progress == 100"  class="text-green-500 text-xs bg-green-200 shadow p-2 rounded-lg">
+          Completed
+        </div>
         </div>
         <div class="font-medium   text-gray-500 mb-2 text-[11px]">
           Lecturer: {{ lecturer }}
@@ -47,38 +55,75 @@ const props = defineProps([
         <div class="flex justify-center space-x-2 items-center "></div>
 
         <div class="font-medium">
-          <div>
+          <div v-if="rating !== undefined">
             <span class="text-yellow-500">
-              <i class="fa-solid fa-star"> </i>
+              <i class="fa-solid fa-star mr-2"> </i>
             </span>
-            4.9 (27.312 reviews)
+            {{ (typeof rating === 'number' ? rating.toFixed(2) : rating) || 'N/A' }}
           </div>
         </div>
         <div class="font-medium">
-             <div>
-              <i class="fa-solid fa-book-open"> </i>
-            301 lectures
+             <div v-if="noOfLessons !== undefined">
+              <i class="fa-solid fa-book-open mr-2"> </i>
+            {{ noOfLessons }} lectures
           </div>
         </div>
 
-        <div v-if="props.price === 0" class="text-green-500 font-bold  text-xl">
+        <div v-if="!props.owned-status">
+        <div v-if="props.price === 0 || props.price === undefined" class="text-green-500 font-bold  text-xl">
            Free
         </div>
 
-         <div v-else class="text-green-500 font-bold  text-xl">
-           {{ price }} $
+         <div v-else-if="props.price > 0" class="text-green-500 font-bold  text-xl">
+           ${{ price }}
+        </div>
         </div>
 
-        <!-- <div v-if="props.progress === `Learning`" class="w-auto 
-        rounded-full p-1.5 bg-yellow-400 text-white shadow-sm ">
-           {{ progress }}
-        </div>
+        <div v-if="props.progress !== undefined && props.progress <=25" class="flex items-center gap-2.5">
+                <div  class="w-full  bg-gray-200 rounded-full h-2.5">
+                  <div
+                    class="bg-red-600 h-2.5 rounded-full"
+                    :style="{ width: `${progress || 0}%` }"
+                  >
+                </div>
+          
+                </div>
+                 <div class="text-sm text-red-500 font-semibold">
+                  {{ progress }}% 
+                </div>
+          </div>
 
-        <div v-if="props.progress === `Completed`" class=" 
-        rounded-full p-1.5 bg-green-400 text-white shadow-sm ">
-           {{ progress }}
-        </div> -->
+          
+        <div v-if="props.progress !== undefined && props.progress > 25 && props.progress<=75" class="flex items-center gap-2.5">
+                <div  class="w-full  bg-gray-200 rounded-full h-2.5">
+                  <div
+                    class="bg-yellow-300 h-2.5 rounded-full"
+                    :style="{ width: `${progress || 0}%` }"
+                  >
+                </div>
+          
+                </div>
+                 <div class="text-sm text-yellow-300 font-semibold">
+                  {{ progress }}% 
+                </div>
+          </div>
 
+          <div v-if="props.progress !== undefined && props.progress > 75 && props.progress<= 100" class="flex items-center gap-2.5">
+                <div  class="w-full  bg-gray-200 rounded-full h-2.5">
+                  <div
+                    class="bg-green-500 h-2.5 rounded-full"
+                    :style="{ width: `${progress || 0}%` }"
+                  >
+                </div>
+          
+                </div>
+                 <div class="text-sm text-green-500 font-semibold">
+                  {{ progress }}% 
+                </div>
+                
+          </div>
+
+          
     
       </div>
     </div>
