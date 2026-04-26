@@ -21,16 +21,15 @@
 
                     <div class="flex flex-col gap-4">
                         <p class="font-bold text-2xl">Quick Links</p>
-                        <a href="#" class="hover:border-b border-white transition-colors cursor-pointer">About Us</a>
-                        <a href="#" class="hover:border-b border-white transition-colors cursor-pointer">Contact</a>
-                        <a href="#" class="hover:border-b border-white transition-colors cursor-pointer">FAQ</a>
+                        <a href="../pages/other/AboutUsPage.vue" class="hover:border-b border-white transition-colors cursor-pointer">About Us</a>
+                        <a href="../pages/other/ContactPage.vue" class="hover:border-b border-white transition-colors cursor-pointer">Contact</a>
+                        <a href="../pages/other/HelpSupportPage.vue" class="hover:border-b border-white transition-colors cursor-pointer">FAQ</a>
                     </div>
 
                     <div class="flex flex-col gap-4">
                         <p class="font-bold text-2xl">Your Account</p>
                         <a href="#" class="hover:border-b border-white transition-colors cursor-pointer">Your Profile</a>
-                        <a href="#" class="hover:border-b border-white transition-colors cursor-pointer">Order History</a>
-                        <a href="#" class="hover:border-b border-white transition-colors cursor-pointer">Checkout</a>
+                       
                     </div>
 
                     <div class="flex flex-col gap-4">
