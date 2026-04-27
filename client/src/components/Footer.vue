@@ -7,7 +7,6 @@ const { isAuthenticated } = storeToRefs(authStore)
 </script>
 
 <template>
-  <!-- Your Footer (with improvements) -->
         <footer class="mt-auto"> 
             <div class="bg-black text-white w-full px-12 py-8">
                 <div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 max-w-screen-xl w-full place-items-start mx-auto gap-6">
