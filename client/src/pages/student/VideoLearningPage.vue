@@ -1,7 +1,7 @@
 <script setup>
 import Plyr from "plyr";
 import "plyr/dist/plyr.css";
-import { onMounted, ref, computed } from "vue";
+import { onMounted, ref, computed, watch } from "vue";
 import { nextTick } from "vue";
 import { useRoute } from "vue-router";
 import { useAuthStore } from "../../stores/auth.store";
@@ -85,6 +85,13 @@ function formatToHoursMinutes(totalSeconds) {
 
   return `${h}h${m}`;
 }
+watch(courseLessons, async (newLessons) => {
+  if (newLessons.length > 0 && videoRef.value) {
+    await nextTick();
+    videoRef.value.load();
+    videoRef.value.play();
+  }
+}, { once: true });
 
 onMounted(() => {
   getLessonData();
